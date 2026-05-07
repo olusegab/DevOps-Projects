@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>YomiMark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & TOKENS ──────────────────────────────────────── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --bg:       #0a0a0f;
+  --surface:  #111118;
+  --surface2: #18181f;
+  --surface3: #202028;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --accent:   #6c63ff;
+  --accent2:  #ff6b9d;
+  --accent3:  #00d4aa;
+  --text:     #f0f0f8;
+  --text2:    #8888aa;
+  --text3:    #44445a;
+  --danger:   #ff4466;
+  --success:  #00cc88;
+  --r:        10px;
+  --r2:       16px;
+  --shadow:   0 8px 32px rgba(0,0,0,0.6);
+  --glow:     0 0 20px rgba(108,99,255,0.25);
+}
+
+/* ── THEMES ──────────────────────────────────────────────── */
+[data-theme="slate"] {
+  --bg:#0d1117;--surface:#161b22;--surface2:#21262d;--surface3:#30363d;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.14);
+  --accent:#58a6ff;--accent2:#f78166;--accent3:#56d364;
+  --text:#e6edf3;--text2:#8b949e;--text3:#3d444d;
+}
+[data-theme="rose"] {
+  --bg:#0f0810;--surface:#18101a;--surface2:#221428;--surface3:#2e1c38;
+  --border:rgba(255,150,200,0.08);--border2:rgba(255,150,200,0.15);
+  --accent:#e879f9;--accent2:#fb7185;--accent3:#34d399;
+  --text:#fdf4ff;--text2:#c084fc;--text3:#6b21a8;
+}
+[data-theme="amber"] {
+  --bg:#0f0d08;--surface:#1a1608;--surface2:#241e0a;--surface3:#30280e;
+  --border:rgba(255,200,80,0.08);--border2:rgba(255,200,80,0.15);
+  --accent:#f59e0b;--accent2:#ef4444;--accent3:#10b981;
+  --text:#fffbeb;--text2:#d97706;--text3:#78350f;
+}
+[data-theme="arctic"] {
+  --bg:#f8fafc;--surface:#fff;--surface2:#f1f5f9;--surface3:#e2e8f0;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+  --accent:#6366f1;--accent2:#ec4899;--accent3:#10b981;
+  --text:#0f172a;--text2:#64748b;--text3:#cbd5e1;
+}
+[data-theme="forest"] {
+  --bg:#030a05;--surface:#061008;--surface2:#0c1a0e;--surface3:#142416;
+  --border:rgba(100,255,120,0.07);--border2:rgba(100,255,120,0.13);
+  --accent:#22c55e;--accent2:#84cc16;--accent3:#06b6d4;
+  --text:#f0fdf4;--text2:#4ade80;--text3:#14532d;
+}
+[data-theme="ocean"] {
+  --bg:#020d18;--surface:#041525;--surface2:#082035;--surface3:#0e2d4a;
+  --border:rgba(56,189,248,0.07);--border2:rgba(56,189,248,0.14);
+  --accent:#38bdf8;--accent2:#818cf8;--accent3:#34d399;
+  --text:#f0f9ff;--text2:#7dd3fc;--text3:#0c4a6e;
+}
+
+/* ── BASE ────────────────────────────────────────────────── */
+html, body {
+  width: 100%; height: 100%;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+#app {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100vh;
+  position: relative;
+}
+
+/* ── TITLEBAR ────────────────────────────────────────────── */
+#titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.logo-mark {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+.logo-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(108,99,255,0.4);
+}
+.logo-icon svg { width: 16px; height: 16px; fill: #fff; }
+.logo-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px; font-weight: 700;
+  letter-spacing: -0.3px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.logo-badge {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--text3);
+  background: var(--surface3); border-radius: 4px;
+  padding: 2px 6px; margin-left: 2px;
+}
+
+/* Search bar in titlebar */
+.search-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 0 12px;
+  height: 34px;
+  max-width: 300px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-bar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+}
+.search-bar svg { flex-shrink: 0; opacity: 0.4; }
+#search {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--text); font-family: inherit; font-size: 12px;
+}
+#search::placeholder { color: var(--text3); }
+.search-clear {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--surface3); border: none;
+  color: var(--text2); cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0;
+}
+.search-clear.show { display: flex; }
+
+/* Titlebar actions */
+.title-actions {
+  display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+}
+.tbtn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 10px; height: 30px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text2); cursor: pointer; font-family: inherit;
+  font-size: 11px; font-weight: 500; white-space: nowrap;
+  transition: all 0.15s;
+}
+.tbtn:hover { background: var(--surface3); color: var(--text); border-color: var(--border2); }
+.tbtn svg { width: 13px; height: 13px; }
+.tbtn.primary {
+  background: var(--accent); border-color: var(--accent);
+  color: #fff; font-weight: 600;
+}
+.tbtn.primary:hover { opacity: 0.85; }
+.tbtn.icon-only { width: 30px; padding: 0; justify-content: center; }
+
+/* Divider */
+.tdiv { width: 1px; height: 20px; background: var(--border); margin: 0 2px; }
+
+/* Close button */
+.close-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: none; background: transparent;
+  color: var(--text3); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; font-size: 16px; line-height: 1;
+}
+.close-btn:hover { background: var(--danger); color: #fff; }
+
+/* ── MAIN CONTENT ────────────────────────────────────────── */
+#main {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  overflow: hidden;
+}
+
+/* ── SIDEBAR ─────────────────────────────────────────────── */
+#sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section { padding: 16px 12px 6px; }
+.sidebar-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--text3);
+  padding: 0 6px; margin-bottom: 4px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 8px; border-radius: 8px;
+  cursor: pointer; color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  transition: all 0.15s; margin-bottom: 1px;
+  position: relative;
+}
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.7; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item:hover svg { opacity: 1; }
+.nav-item.active {
+  background: linear-gradient(135deg, rgba(108,99,255,0.18), rgba(255,107,157,0.10));
+  color: var(--accent); border: 1px solid rgba(108,99,255,0.2);
+}
+.nav-item.active svg { opacity: 1; }
+.nav-count {
+  margin-left: auto; font-size: 10px; font-weight: 600;
+  background: var(--surface3); color: var(--text3);
+  border-radius: 10px; padding: 1px 6px; min-width: 20px;
+  text-align: center;
+}
+.nav-item.active .nav-count { background: rgba(108,99,255,0.2); color: var(--accent); }
+
+/* Folder list in sidebar */
+#folder-list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+#folder-list::-webkit-scrollbar { width: 3px; }
+#folder-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.folder-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 8px;
+  cursor: pointer; color: var(--text2);
+  font-size: 12px; transition: all 0.15s; margin-bottom: 1px;
+}
+.folder-item:hover { background: var(--surface2); color: var(--text); }
+.folder-item.active { background: var(--surface2); color: var(--text); }
+.folder-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-count { font-size: 10px; color: var(--text3); }
+
+/* Sidebar footer */
+.sidebar-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+}
+.theme-swatches {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+}
+.tsw {
+  aspect-ratio: 1; border-radius: 5px; cursor: pointer;
+  border: 2px solid transparent; transition: transform 0.15s;
+  position: relative;
+}
+.tsw:hover { transform: scale(1.15); }
+.tsw.on { border-color: #fff; box-shadow: 0 0 0 1px var(--accent); }
+
+/* ── CONTENT AREA ────────────────────────────────────────── */
+#content {
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+/* Content header */
+.content-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.content-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px; font-weight: 600; flex: 1;
+}
+.sort-select {
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text2); font-family: inherit; font-size: 11px;
+  border-radius: 7px; padding: 4px 8px; cursor: pointer; outline: none;
+}
+.sort-select:hover { border-color: var(--border2); }
+
+/* View toggle */
+.view-toggle {
+  display: flex; gap: 2px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 2px;
+}
+.vbtn {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: none; background: none; color: var(--text3);
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: all 0.15s;
+}
+.vbtn:hover { color: var(--text2); }
+.vbtn.on { background: var(--surface3); color: var(--text); }
+.vbtn svg { width: 13px; height: 13px; }
+
+/* ── BOOKMARK LIST ───────────────────────────────────────── */
+#list-wrap {
+  flex: 1; overflow-y: auto; padding: 8px 12px;
+}
+#list-wrap::-webkit-scrollbar { width: 4px; }
+#list-wrap::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* List view */
+.bm-list { display: flex; flex-direction: column; gap: 2px; }
+
+.bm-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--r);
+  border: 1px solid transparent;
+  background: var(--surface);
+  cursor: pointer; transition: all 0.15s;
+  position: relative; overflow: hidden;
+  min-width: 0;
+}
+.bm-row::before {
+  content: ''; position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  opacity: 0; border-radius: 2px 0 0 2px;
+  transition: opacity 0.15s;
+}
+.bm-row:hover { background: var(--surface2); border-color: var(--border2); }
+.bm-row:hover::before { opacity: 1; }
+.bm-row.pinned { border-color: rgba(108,99,255,0.2); }
+
+.bm-fav {
+  width: 28px; height: 28px; border-radius: 7px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden; font-size: 13px;
+}
+.bm-fav img { width: 16px; height: 16px; display: block; }
+
+.bm-body { flex: 1; min-width: 0; }
+.bm-title {
+  font-weight: 500; font-size: 12px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-bottom: 1px;
+}
+.bm-meta {
+  display: flex; align-items: center; gap: 6px;
+}
+.bm-domain { font-size: 10px; color: var(--text3); }
+.bm-folder-tag {
+  font-size: 9px; color: var(--accent); background: rgba(108,99,255,0.12);
+  border-radius: 4px; padding: 1px 5px; border: 1px solid rgba(108,99,255,0.2);
+}
+
+.bm-actions {
+  display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0;
+}
+.bm-row:hover .bm-actions { opacity: 1; }
+.bm-action {
+  width: 24px; height: 24px; border-radius: 6px;
+  border: none; background: var(--surface3);
+  color: var(--text2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; transition: all 0.15s;
+}
+.bm-action:hover { background: var(--accent); color: #fff; }
+.bm-action.del:hover { background: var(--danger); }
+.bm-action svg { width: 12px; height: 12px; }
+
+/* Grid view */
+.bm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+.bm-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2); padding: 14px;
+  cursor: pointer; transition: all 0.18s;
+  position: relative; overflow: hidden;
+}
+.bm-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--glow);
+}
+.bm-card-fav {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; margin-bottom: 10px; overflow: hidden;
+}
+.bm-card-fav img { width: 20px; height: 20px; display: block; }
+.bm-card-title {
+  font-size: 12px; font-weight: 500; color: var(--text);
+  overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  margin-bottom: 4px; line-height: 1.4;
+}
+.bm-card-domain { font-size: 10px; color: var(--text3); }
+.bm-card-actions {
+  position: absolute; top: 8px; right: 8px;
+  display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s;
+}
+.bm-card:hover .bm-card-actions { opacity: 1; }
+
+/* Folder header row */
+.folder-header-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 4px 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text3);
+}
+.folder-header-row svg { width: 12px; height: 12px; }
+
+/* ── EMPTY STATE ─────────────────────────────────────────── */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; padding: 40px;
+  text-align: center;
+}
+.empty-icon {
+  width: 64px; height: 64px; border-radius: 18px;
+  background: var(--surface2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; margin-bottom: 16px; opacity: 0.7;
+}
+.empty-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+.empty-sub { font-size: 12px; color: var(--text3); line-height: 1.6; }
+
+/* ── STATUS BAR ──────────────────────────────────────────── */
+#statusbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 16px;
+  background: var(--surface); border-top: 1px solid var(--border);
+  font-size: 10px; color: var(--text3); flex-shrink: 0;
+}
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success); box-shadow: 0 0 6px var(--success);
+}
+.status-item { display: flex; align-items: center; gap: 5px; }
+.status-spacer { flex: 1; }
+.kbd {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 4px; padding: 1px 5px; font-family: monospace;
+  font-size: 9px; color: var(--text2);
+}
+
+/* ── MODAL ───────────────────────────────────────────────── */
+#overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  z-index: 100; align-items: center; justify-content: center;
+}
+#overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r2); padding: 24px; width: 360px;
+  box-shadow: var(--shadow);
+  animation: modalIn 0.2s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+}
+.modal-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-icon svg { width: 16px; height: 16px; fill: #fff; }
+.modal-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; }
+.modal-sub { font-size: 11px; color: var(--text3); margin-top: 1px; }
+.form-group { margin-bottom: 12px; }
+.form-label {
+  display: block; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 5px;
+}
+.form-input {
+  width: 100%; padding: 8px 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: inherit;
+  font-size: 12px; outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+}
+.form-select {
+  width: 100%; padding: 8px 12px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-family: inherit;
+  font-size: 12px; outline: none;
+}
+.form-select option { background: var(--surface2); }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.btn {
+  padding: 8px 16px; border-radius: 8px; font-family: inherit;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text2); transition: all 0.15s;
+}
+.btn:hover { background: var(--surface3); color: var(--text); }
+.btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; color: #fff; font-weight: 600;
+}
+.btn.primary:hover { opacity: 0.88; }
+
+/* ── TOAST ───────────────────────────────────────────────── */
+#toast-container {
+  position: fixed; bottom: 40px; right: 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  z-index: 200; pointer-events: none;
+}
+.toast {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: 10px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  box-shadow: var(--shadow); font-size: 12px;
+  animation: toastIn 0.25s cubic-bezier(0.34,1.4,0.64,1);
+  max-width: 240px;
+}
+.toast.out { animation: toastOut 0.2s ease forwards; }
+@keyframes toastIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+@keyframes toastOut { to { opacity:0; transform:translateY(8px); } }
+.toast-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.toast.success .toast-dot { background: var(--success); }
+.toast.info    .toast-dot { background: var(--accent); }
+.toast.error   .toast-dot { background: var(--danger); }
+
+/* ── SCROLLBAR ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── UTIL ────────────────────────────────────────────────── */
+.spin { animation: spin 0.7s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLEBAR -->
+  <div id="titlebar">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M17 3H7a2 2 0 00-2 2v16l7-3 7 3V5a2 2 0 00-2-2z"/></svg>
+      </div>
+      <span class="logo-text">YomiMark</span>
+      <span class="logo-badge">PRO</span>
+    </div>
+
+    <div class="search-bar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="search" placeholder="Search bookmarks, URLs, folders…" autocomplete="off" spellcheck="false"/>
+      <button class="search-clear" id="searchClear" title="Clear">✕</button>
+    </div>
+
+    <div class="title-actions">
+      <button class="tbtn" id="btnSync" title="Sync Chrome bookmarks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Sync
+      </button>
+      <div class="tdiv"></div>
+      <button class="tbtn primary" id="btnAdd">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Bookmark
+      </button>
+      <div class="tdiv"></div>
+      <button class="close-btn" id="btnClose" title="Close YomiMark">✕</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Views</div>
+        <div class="nav-item active" data-view="all" id="nav-all">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3H7a2 2 0 00-2 2v16l7-3 7 3V5a2 2 0 00-2-2z"/></svg>
+          All Bookmarks
+          <span class="nav-count" id="count-all">0</span>
+        </div>
+        <div class="nav-item" data-view="recent" id="nav-recent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Recently Added
+          <span class="nav-count" id="count-recent">30</span>
+        </div>
+        <div class="nav-item" data-view="pinned" id="nav-pinned">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Pinned
+          <span class="nav-count" id="count-pinned">0</span>
+        </div>
+        <div class="nav-item" data-view="tabs" id="nav-tabs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Open Tabs
+          <span class="nav-count" id="count-tabs">0</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-label">Folders</div>
+      </div>
+      <div id="folder-list"></div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-label" style="padding:0;margin-bottom:6px">Theme</div>
+        <div class="theme-swatches" id="theme-swatches"></div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div id="content">
+      <div class="content-header">
+        <span class="content-title" id="content-title">All Bookmarks</span>
+        <select class="sort-select" id="sortSelect">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="alpha">A → Z</option>
+          <option value="alpha-desc">Z → A</option>
+        </select>
+        <div class="view-toggle">
+          <button class="vbtn on" id="vbtn-list" title="List view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+          <button class="vbtn" id="vbtn-grid" title="Grid view">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="list-wrap">
+        <div class="empty-state">
+          <div class="empty-icon">🔖</div>
+          <div class="empty-title">Loading bookmarks…</div>
+          <div class="empty-sub">Fetching from Chrome</div>
+        </div>
+      </div>
+
+      <div id="statusbar">
+        <div class="status-dot"></div>
+        <span id="status-text">Ready</span>
+        <div class="status-spacer"></div>
+        <span class="status-item"><span class="kbd">Ctrl+F</span> Search</span>
+        <span class="status-item"><span class="kbd">Ctrl+N</span> Add</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-icon">
+        <svg viewBox="0 0 24 24"><path d="M17 3H7a2 2 0 00-2 2v16l7-3 7 3V5a2 2 0 00-2-2z"/></svg>
+      </div>
+      <div>
+        <div class="modal-title" id="modal-title">Add Bookmark</div>
+        <div class="modal-sub" id="modal-sub">Save a page to your collection</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Title</label>
+      <input class="form-input" id="m-title" type="text" placeholder="Page title"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">URL</label>
+      <input class="form-input" id="m-url" type="url" placeholder="https://"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Folder <span style="color:var(--text3);font-weight:400;text-transform:none">(optional)</span></label>
+      <select class="form-select" id="m-folder">
+        <option value="">No folder</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="btnCancel">Cancel</button>
+      <button class="btn primary" id="btnSave">Save Bookmark</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="app.js"></script>
+</body>
+</html>
