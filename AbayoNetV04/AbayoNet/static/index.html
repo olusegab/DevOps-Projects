@@ -1,0 +1,1973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AbayoNet Enterprise</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ═══ THEMES ═══ */
+:root{
+  --bg:#060b14;--bg2:#0c1525;--bg3:#131e33;--bg4:#1a2844;
+  --acc:#00c8ff;--acc2:#7b5cff;
+  --G:#00e676;--R:#ff1744;--Y:#ffc107;--O:#ff6d00;
+  --tx:#deeeff;--tx2:#6888aa;--tx3:#2a3d58;
+  --bd:#172035;--card:#0c1525;--hov:#111e32;
+  --r:12px;--sh:0 4px 32px #0009;
+}
+.t-light{--bg:#f0f5fb;--bg2:#e4edf8;--bg3:#d6e3f2;--bg4:#c4d4e8;--acc:#0057c8;--acc2:#5c34d4;--G:#007a0a;--R:#c80000;--Y:#b07000;--tx:#0a1525;--tx2:#3a5580;--tx3:#8aadcc;--bd:#b8ccdf;--card:#fff;--hov:#eef4fc;}
+.t-matrix{--bg:#000900;--bg2:#001400;--bg3:#001e00;--bg4:#002800;--acc:#00ff41;--acc2:#00cc33;--G:#00ff41;--R:#ff0000;--Y:#ffff00;--tx:#00ff41;--tx2:#00aa2a;--tx3:#004410;--bd:#003800;--card:#000d00;--hov:#001100;}
+.t-slate{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--bg4:#2d333b;--acc:#58a6ff;--acc2:#d2a8ff;--G:#3fb950;--R:#f85149;--Y:#d29922;--tx:#e6edf3;--tx2:#7d8590;--tx3:#3d444d;--bd:#30363d;--card:#161b22;--hov:#1c2128;}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;transition:background .3s,color .3s;}
+
+/* ═══ LOGIN ═══ */
+#login-page{display:none;position:fixed;inset:0;background:var(--bg);z-index:9000;align-items:center;justify-content:center;}
+#login-page.show{display:flex;}
+.login-box{background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:40px 36px;width:90%;max-width:400px;box-shadow:0 20px 80px #000a;animation:popIn .3s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;}
+.login-gem{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 0 30px color-mix(in srgb,var(--acc) 50%,transparent);}
+.login-name{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{font-size:10px;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;margin-top:2px;}
+.lf{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+.lf label{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;}
+.lf input{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;color:var(--tx);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
+.lf input:focus{border-color:var(--acc);}
+.login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;color:#000;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;font-family:'Inter',sans-serif;transition:all .2s;}
+.login-btn:hover{opacity:.88;transform:translateY(-1px);}
+.login-err{color:var(--R);font-size:11px;text-align:center;margin-top:10px;min-height:16px;}
+.login-footer{text-align:center;font-size:10px;color:var(--tx3);margin-top:20px;}
+.rbadge{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;}
+.rbadge.admin{background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc);}
+.rbadge.readonly{background:color-mix(in srgb,var(--tx3) 20%,transparent);color:var(--tx2);}
+
+/* ═══ TOPBAR ═══ */
+#topbar{display:none;align-items:center;gap:10px;background:var(--bg2);border-bottom:2px solid var(--bd);padding:0 16px;height:52px;flex-shrink:0;z-index:50;}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.logo-gem{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px color-mix(in srgb,var(--acc) 50%,transparent);}
+.logo-t{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-s{font-size:8px;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;}
+.tstat{display:flex;gap:10px;flex:1;justify-content:center;flex-wrap:wrap;}
+.ts{display:flex;align-items:center;gap:4px;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+.tsd{width:7px;height:7px;border-radius:50%;}
+.tsd.g{background:var(--G);box-shadow:0 0 6px var(--G);}
+.tsd.r{background:var(--R);box-shadow:0 0 6px var(--R);}
+.tsd.y{background:var(--Y);box-shadow:0 0 6px var(--Y);}
+.tsn{font-weight:700;color:var(--tx);}
+.tsl{color:var(--tx2);}
+.tright{display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;}
+.tbtn{display:flex;align-items:center;gap:4px;padding:5px 9px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;color:var(--tx2);cursor:pointer;font-size:11px;font-family:'Inter',sans-serif;transition:all .18s;white-space:nowrap;user-select:none;}
+.tbtn:hover{background:var(--acc);color:#000;border-color:var(--acc);}
+.tbtn.red:hover{background:var(--R);color:#fff;border-color:var(--R);}
+.abadge{background:var(--R);color:#fff;border-radius:50px;padding:1px 5px;font-size:9px;font-weight:700;min-width:16px;text-align:center;}
+#clk{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:3px 7px;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;}
+.ldot{width:5px;height:5px;border-radius:50%;background:var(--G);animation:pls 1.4s infinite;display:inline-block;}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.3}}
+#uchip{display:flex;align-items:center;gap:5px;padding:4px 9px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;font-size:11px;color:var(--tx2);}
+
+/* ═══ LAYOUT ═══ */
+#wrap{display:none;flex:1;overflow:hidden;}
+#sb{width:220px;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;transition:width .25s;flex-shrink:0;overflow:hidden;}
+#sb.col{width:50px;}
+.sbl{padding:10px 10px 3px;font-size:9px;font-weight:700;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;white-space:nowrap;overflow:hidden;}
+.sbi{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;margin:1px 5px;color:var(--tx2);font-size:12px;white-space:nowrap;overflow:hidden;transition:all .15s;user-select:none;}
+.sbi:hover{background:var(--hov);color:var(--tx);}
+.sbi.act{background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 18%,transparent),color-mix(in srgb,var(--acc2) 10%,transparent));color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 25%,transparent);}
+.sbic{font-size:15px;flex-shrink:0;width:18px;text-align:center;}
+.sbtt{flex:1;}
+.sbct{background:var(--bg4);padding:1px 6px;border-radius:20px;font-size:9px;color:var(--tx3);}
+#sb.col .sbtt,#sb.col .sbct,#sb.col .sbl{display:none;}
+.sbhosts{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+.he{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:5px;cursor:pointer;margin:1px 5px;font-size:11px;color:var(--tx2);transition:all .13s;}
+.he:hover{background:var(--hov);color:var(--tx);}
+.he.sel{background:color-mix(in srgb,var(--acc) 15%,transparent);color:var(--acc);}
+.hdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.hdot.online{background:var(--G);box-shadow:0 0 5px var(--G);}
+.hdot.offline{background:var(--R);box-shadow:0 0 5px var(--R);animation:pls 1.4s infinite;}
+.hdot.unknown{background:var(--tx3);}
+.hn{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'JetBrains Mono',monospace;font-size:10px;}
+.hl{font-size:9px;color:var(--tx3);}
+.sbtog{margin-top:auto;padding:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx3);font-size:16px;border-top:1px solid var(--bd);transition:color .18s;}
+.sbtog:hover{color:var(--acc);}
+
+/* ═══ CONTENT ═══ */
+#content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.page{display:none;flex:1;overflow-y:auto;padding:16px;flex-direction:column;gap:12px;}
+.page.act{display:flex;}
+.page::-webkit-scrollbar{width:5px;}
+.page::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px;}
+.page::-webkit-scrollbar-thumb:hover{background:var(--acc);}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:14px;}
+.ct{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--tx2);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+
+/* ═══ STAT GRID ═══ */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;}
+.sc{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:default;}
+.sc:hover{border-color:color-mix(in srgb,var(--acc) 40%,transparent);transform:translateY(-1px);}
+.scic{font-size:22px;flex-shrink:0;}
+.scn{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;line-height:1;}
+.scl{font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.sc.on .scn{color:var(--G);}
+.sc.off .scn{color:var(--R);}
+.sc.warn .scn{color:var(--Y);}
+.sc.inf .scn{color:var(--acc);}
+
+/* ═══ HOST CARDS ═══ */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+.hcard{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:cardIn .25s ease both;}
+.hcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.hcard.online::before{background:linear-gradient(90deg,var(--G),#00b04a);}
+.hcard.offline::before{background:linear-gradient(90deg,var(--R),#c0001a);}
+.hcard.unknown::before{background:var(--bd);}
+.hcard.maintenance::before{background:linear-gradient(90deg,var(--Y),var(--O));}
+.hcard:hover{border-color:color-mix(in srgb,var(--acc) 40%,transparent);transform:translateY(-2px);box-shadow:var(--sh);}
+@keyframes cardIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.hct{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.hcs{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.hcs.online{background:var(--G);box-shadow:0 0 7px var(--G);}
+.hcs.offline{background:var(--R);box-shadow:0 0 7px var(--R);animation:pls 1.4s infinite;}
+.hcs.unknown{background:var(--tx3);}
+.hcn{font-weight:600;font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hcip{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);margin-bottom:5px;}
+.hcg{font-size:8px;padding:1px 6px;background:color-mix(in srgb,var(--acc) 15%,transparent);color:var(--acc);border-radius:20px;display:inline-block;margin-bottom:5px;}
+.hcmg{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.hcm{background:var(--bg3);border-radius:5px;padding:5px 6px;text-align:center;}
+.hcmv{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc);}
+.hcmv.bad{color:var(--R);}
+.hcmv.warn{color:var(--Y);}
+.hcml{font-size:7px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;}
+.hcact{display:flex;gap:4px;margin-top:8px;opacity:0;transition:opacity .15s;}
+.hcard:hover .hcact{opacity:1;}
+.hcab{flex:1;padding:4px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;color:var(--tx2);font-size:10px;cursor:pointer;transition:all .13s;font-family:'Inter',sans-serif;}
+.hcab:hover{background:var(--acc);color:#000;border-color:var(--acc);}
+.hcab.del:hover{background:var(--R);color:#fff;border-color:var(--R);}
+.mbadge{position:absolute;top:8px;right:8px;font-size:8px;background:var(--Y);color:#000;padding:1px 5px;border-radius:3px;font-weight:700;}
+
+/* ═══ DETAIL ═══ */
+.dhead{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--bd);flex-shrink:0;flex-wrap:wrap;}
+.dst{padding:2px 10px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.dst.online{background:color-mix(in srgb,var(--G) 18%,transparent);color:var(--G);border:1px solid color-mix(in srgb,var(--G) 35%,transparent);}
+.dst.offline{background:color-mix(in srgb,var(--R) 18%,transparent);color:var(--R);border:1px solid color-mix(in srgb,var(--R) 35%,transparent);}
+.dst.unknown{background:color-mix(in srgb,var(--tx3) 18%,transparent);color:var(--tx3);border:1px solid var(--bd);}
+.dname{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;}
+.dip{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2);}
+.bkbtn{padding:5px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;color:var(--tx2);cursor:pointer;font-size:11px;transition:all .15s;}
+.bkbtn:hover{background:var(--acc);color:#000;}
+.dbody{padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;}
+.mrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;}
+.mb{background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:10px;text-align:center;}
+.mbv{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;color:var(--acc);}
+.mbv.bad{color:var(--R);}
+.mbv.warn{color:var(--Y);}
+.mbv.good{color:var(--G);}
+.mbl{font-size:8px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+/* CHART WRAPPERS — fixed heights so canvas always has room */
+.cw{position:relative;width:100%;height:240px;}
+.cw-sm{position:relative;width:100%;height:180px;}
+.cbts{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;}
+.cbt{padding:4px 9px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;color:var(--tx2);font-size:10px;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;}
+.cbt.act{background:var(--acc);color:#000;border-color:var(--acc);}
+.trbox{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);max-height:160px;min-height:60px;overflow-y:auto;white-space:pre;line-height:1.7;}
+.ubar{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:1px;}
+.useg{flex:1;min-width:2px;border-radius:1px;}
+.useg.up{background:var(--G);}
+.useg.dn{background:var(--R);}
+.useg.uk{background:var(--bd);}
+
+/* ═══ TABLES ═══ */
+.tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.tbl th{text-align:left;padding:7px 10px;background:var(--bg3);color:var(--tx2);font-size:9px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--bd);white-space:nowrap;}
+.tbl td{padding:7px 10px;border-bottom:1px solid color-mix(in srgb,var(--bd) 50%,transparent);color:var(--tx);vertical-align:middle;}
+.tbl tr:hover td{background:var(--hov);}
+.sev{padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;display:inline-block;}
+.sev.critical{background:color-mix(in srgb,var(--R) 20%,transparent);color:var(--R);}
+.sev.warning{background:color-mix(in srgb,var(--Y) 20%,transparent);color:var(--Y);}
+.sev.info{background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc);}
+.ackb{padding:2px 7px;background:var(--bg3);border:1px solid var(--bd);border-radius:4px;color:var(--tx2);font-size:9px;cursor:pointer;transition:all .13s;}
+.ackb:hover{background:var(--G);color:#000;border-color:var(--G);}
+.upbar{display:inline-block;padding:2px 8px;border-radius:20px;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;}
+.upbar.good{background:color-mix(in srgb,var(--G) 18%,transparent);color:var(--G);}
+.upbar.warn{background:color-mix(in srgb,var(--Y) 18%,transparent);color:var(--Y);}
+.upbar.bad{background:color-mix(in srgb,var(--R) 18%,transparent);color:var(--R);}
+
+/* ═══ FORMS ═══ */
+.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.fg label{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;}
+.fg input,.fg select,.fg textarea{background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:8px 11px;color:var(--tx);font-family:'Inter',sans-serif;font-size:12px;outline:none;transition:border-color .15s;width:100%;}
+.fg input:focus,.fg select:focus{border-color:var(--acc);}
+.fg select option{background:var(--bg3);}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fgrid.s1{grid-template-columns:1fr;}
+.btn{padding:8px 14px;border-radius:7px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;transition:all .18s;}
+.btnA{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#000;}
+.btnA:hover{opacity:.85;transform:translateY(-1px);}
+.btnD{background:var(--R);color:#fff;}
+.btnD:hover{opacity:.85;}
+.btnS{background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);}
+.btnS:hover{background:var(--hov);color:var(--tx);}
+
+/* ═══ MODALS ═══ */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(7px);z-index:1000;align-items:center;justify-content:center;}
+.mbg.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:20px;width:92%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px #0009;animation:popIn .25s ease;}
+.mt{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--acc);margin-bottom:14px;}
+.mf{display:flex;gap:7px;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);}
+
+/* ═══ MISC ═══ */
+.tsws{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.tsw{width:36px;height:36px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .18s;}
+.tsw:hover,.tsw.act{border-color:#fff;box-shadow:0 0 10px #fff3;}
+.scangrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:10px;}
+.scancard{background:var(--card);border:1px solid color-mix(in srgb,var(--G) 35%,transparent);border-radius:8px;padding:9px 11px;display:flex;align-items:center;gap:8px;}
+.scanip{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--G);}
+.import-zone{border:2px dashed var(--bd);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;}
+.import-zone:hover,.import-zone.drag{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 5%,transparent);}
+.user-role{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;}
+.user-role.admin{background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc);}
+.user-role.readonly{background:color-mix(in srgb,var(--tx3) 20%,transparent);color:var(--tx2);}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--bd);border-radius:30px;padding:8px 20px;font-size:12px;z-index:9999;transition:transform .28s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--sh);pointer-events:none;font-family:'JetBrains Mono',monospace;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.ok{border-color:var(--G);color:var(--G);}
+#toast.er{border-color:var(--R);color:var(--R);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--acc);}
+
+/* loading spinner */
+.spin{width:20px;height:20px;border:2px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:rot .7s linear infinite;display:inline-block;}
+@keyframes rot{to{transform:rotate(360deg)}}
+.no-data{text-align:center;padding:32px;color:var(--tx3);font-size:12px;}
+.no-data .ni{font-size:36px;margin-bottom:8px;}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-page" class="show">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-gem">◈</div>
+      <div><div class="login-name">ABAYONET</div><div class="login-sub">Enterprise Monitor v4.0</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--tx2);text-align:center;margin-bottom:20px;">Sign in to continue</div>
+    <div class="lf"><label>Username</label><input type="text" id="l-user" placeholder="admin" autocomplete="username"/></div>
+    <div class="lf"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"/></div>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-err" id="l-err"></div>
+    <div class="login-footer">AbayoNet Enterprise · Secure local monitoring</div>
+  </div>
+</div>
+
+<!-- ═══ TOPBAR ═══ -->
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-gem">◈</div>
+    <div><div class="logo-t">ABAYONET</div><div class="logo-s">Enterprise Monitor</div></div>
+  </div>
+  <div class="tstat">
+    <div class="ts"><div class="tsd g"></div><span class="tsn" id="ts-on">—</span>&nbsp;<span class="tsl">Online</span></div>
+    <div class="ts"><div class="tsd r"></div><span class="tsn" id="ts-off">—</span>&nbsp;<span class="tsl">Offline</span></div>
+    <div class="ts"><div class="tsd y"></div><span class="tsn" id="ts-deg">—</span>&nbsp;<span class="tsl">Degraded</span></div>
+    <div class="ts">⚡<span class="tsn" id="ts-lat" style="color:var(--acc)">—</span><span class="tsl">ms</span></div>
+    <div class="ts"><span class="ldot"></span>&nbsp;<span class="tsl">LIVE</span></div>
+  </div>
+  <div class="tright">
+    <div id="clk">--:--:--</div>
+    <div id="uchip"><span id="uc-role"></span>&nbsp;<span id="uc-name" style="color:var(--tx);font-weight:600;">—</span></div>
+    <div class="tbtn adm" onclick="openM('mAdd')">＋ Add Host</div>
+    <div class="tbtn adm" onclick="openM('mScan')">🔭 Scan</div>
+    <div class="tbtn" onclick="nav('alerts')">🔔 Alerts<span class="abadge" id="abadge" style="display:none">0</span></div>
+    <div class="tbtn" onclick="nav('report')">📊 Report</div>
+    <div class="tbtn red" onclick="doLogout()">⏏ Logout</div>
+  </div>
+</div>
+
+<!-- ═══ WRAP ═══ -->
+<div id="wrap">
+
+<!-- SIDEBAR -->
+<div id="sb">
+  <div class="sbl">Navigation</div>
+  <div class="sbi act" id="nav-dash"     onclick="nav('dash')">    <span class="sbic">🏠</span><span class="sbtt">Dashboard</span></div>
+  <div class="sbi"     id="nav-hosts"    onclick="nav('hosts')">   <span class="sbic">🖥</span><span class="sbtt">All Hosts</span><span class="sbct" id="sb-hc">0</span></div>
+  <div class="sbi"     id="nav-alerts"   onclick="nav('alerts')">  <span class="sbic">🔔</span><span class="sbtt">Alerts</span><span class="sbct" id="sb-ac">0</span></div>
+  <div class="sbi"     id="nav-rules"    onclick="nav('rules')">   <span class="sbic">📏</span><span class="sbtt">Alert Rules</span></div>
+  <div class="sbi"     id="nav-report"   onclick="nav('report')">  <span class="sbic">📊</span><span class="sbtt">Uptime Report</span></div>
+  <div class="sbi"     id="nav-maint"    onclick="nav('maint')">   <span class="sbic">🔧</span><span class="sbtt">Maintenance</span></div>
+  <div class="sbi adm" id="nav-users"    onclick="nav('users')">   <span class="sbic">👥</span><span class="sbtt">User Management</span></div>
+  <div class="sbi adm" id="nav-transfer" onclick="nav('transfer')"><span class="sbic">📦</span><span class="sbtt">Import / Export</span></div>
+  <div class="sbi"     id="nav-settings" onclick="nav('settings')"><span class="sbic">⚙</span><span class="sbtt">Settings</span></div>
+  <div class="sbl" style="margin-top:6px">Live Hosts</div>
+  <div class="sbhosts" id="sb-hosts"></div>
+  <div class="sbtog" id="sbtog" onclick="toggleSb()">◀</div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+<!-- ── DASHBOARD ── -->
+<div class="page act" id="page-dash">
+  <div class="sgrid" id="dash-stats"></div>
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:12px;">
+    <div class="card">
+      <div class="ct" style="justify-content:space-between;">
+        <span>📈 Network Latency — Last 1 Hour</span>
+        <span id="dash-chart-note" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-weight:400;letter-spacing:0;text-transform:none;"></span>
+      </div>
+      <div class="cw"><canvas id="c-dash"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">🔔 Active Alerts</div>
+      <div id="dash-alr" style="overflow-y:auto;max-height:248px;"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct" style="justify-content:space-between;">
+      <span>🖥 Host Status Board</span>
+      <input id="dsearch" placeholder="Filter hosts..." oninput="filterDash()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:4px 9px;color:var(--tx);font-size:11px;outline:none;width:160px;"/>
+    </div>
+    <div class="hgrid" id="dash-hg"></div>
+  </div>
+</div>
+
+<!-- ── HOSTS ── -->
+<div class="page" id="page-hosts">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <div style="flex:1;min-width:160px;display:flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:0 10px;">
+      <span style="color:var(--tx3);">🔍</span>
+      <input id="hsearch" placeholder="Search name, IP, group, tag..." oninput="filterHosts()" style="background:transparent;border:none;outline:none;padding:8px 0;color:var(--tx);font-size:12px;flex:1;"/>
+    </div>
+    <select id="gf" onchange="filterHosts()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:7px 10px;color:var(--tx);font-size:11px;outline:none;cursor:pointer;">
+      <option value="">All Groups</option>
+    </select>
+    <select id="sf" onchange="filterHosts()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:7px 10px;color:var(--tx);font-size:11px;outline:none;cursor:pointer;">
+      <option value="">All Status</option><option value="online">Online</option><option value="offline">Offline</option>
+    </select>
+  </div>
+  <div class="hgrid" id="hosts-grid"></div>
+</div>
+
+<!-- ── DETAIL ── -->
+<div class="page" id="page-detail" style="padding:0;gap:0;">
+  <div class="dhead">
+    <button class="bkbtn" onclick="nav('hosts')">← Back</button>
+    <div class="hcs unknown" id="d-dot" style="width:12px;height:12px;flex-shrink:0;"></div>
+    <div style="flex:1;min-width:0;">
+      <div class="dname" id="d-name">Host</div>
+      <div class="dip" id="d-ip">—</div>
+    </div>
+    <div class="dst unknown" id="d-badge">Unknown</div>
+    <div id="d-maint" style="display:none;background:var(--Y);color:#000;font-size:9px;padding:2px 8px;border-radius:4px;font-weight:700;">🔧 MAINTENANCE</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button class="tbtn" onclick="pingNow()">📡 Ping Now</button>
+      <button class="tbtn" onclick="doTrace()">🔀 Traceroute</button>
+      <button class="tbtn adm" onclick="editCurrent()">✏ Edit</button>
+      <button class="tbtn red adm" onclick="delCurrent()">🗑 Remove</button>
+    </div>
+  </div>
+  <div class="dbody">
+    <!-- Metric boxes -->
+    <div class="mrow" id="d-metrics"></div>
+    <!-- Main latency + loss chart -->
+    <div class="card">
+      <div class="ct" style="justify-content:space-between;">
+        <span>📈 Latency &amp; Packet Loss</span>
+        <div class="cbts">
+          <button class="cbt act" onclick="setDH(1,this)">1H</button>
+          <button class="cbt" onclick="setDH(3,this)">3H</button>
+          <button class="cbt" onclick="setDH(6,this)">6H</button>
+          <button class="cbt" onclick="setDH(12,this)">12H</button>
+          <button class="cbt" onclick="setDH(24,this)">24H</button>
+        </div>
+      </div>
+      <div id="c-detail-wrap" class="cw"><canvas id="c-detail"></canvas></div>
+    </div>
+    <!-- Jitter + Uptime bar -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="card">
+        <div class="ct">〰 Jitter Over Time</div>
+        <div id="c-jitter-wrap" class="cw-sm"><canvas id="c-jitter"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ct">⏱ 24h Uptime Timeline</div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:6px;">Each block = 30 min &nbsp;·&nbsp; <span style="color:var(--G)">■</span> Online &nbsp;<span style="color:var(--R)">■</span> Offline &nbsp;<span style="color:var(--bd)">■</span> No data</div>
+        <div class="ubar" id="ubar"></div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--tx3);margin-top:3px;"><span>24h ago</span><span>Now</span></div>
+        <div id="ust" style="margin-top:10px;font-size:11px;color:var(--tx2);line-height:1.8;"></div>
+      </div>
+    </div>
+    <!-- Traceroute -->
+    <div class="card">
+      <div class="ct" style="justify-content:space-between;">
+        <span>🔀 Traceroute</span>
+        <button class="btn btnA" onclick="doTrace()" style="padding:4px 12px;font-size:10px;">▶ Run Traceroute</button>
+      </div>
+      <div class="trbox" id="trbox">Click "Run Traceroute" to trace the path to this host.</div>
+    </div>
+    <!-- Host alerts -->
+    <div class="card">
+      <div class="ct">🔔 Recent Alerts for This Host</div>
+      <div id="host-alrs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ALERTS ── -->
+<div class="page" id="page-alerts">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔔 Alert Center</div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btnS" onclick="loadAlerts()" style="padding:6px 11px;font-size:11px;">🔄 Refresh</button>
+      <button class="btn btnA" onclick="ackAll()" style="padding:6px 11px;font-size:11px;">✓ Acknowledge All</button>
+    </div>
+  </div>
+  <div id="alert-stats-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>Host</th><th>IP</th><th>Severity</th><th>Message</th><th>Ack'd By</th><th>Action</th></tr></thead>
+      <tbody id="alr-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── ALERT RULES ── -->
+<div class="page" id="page-rules">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">📏 Alert Rules</div>
+    <button class="btn btnA adm" onclick="openM('mRule')" style="padding:6px 11px;font-size:11px;">＋ Add Rule</button>
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Name</th><th>Host</th><th>Condition</th><th>Threshold</th><th>Cooldown</th><th>Email</th><th>Triggered</th><th>Enabled</th><th>Action</th></tr></thead>
+      <tbody id="rules-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── REPORT ── -->
+<div class="page" id="page-report">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">📊 Uptime Report</div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btnS" onclick="loadReport()" style="padding:6px 11px;font-size:11px;">🔄 Refresh</button>
+      <button class="btn btnA" onclick="exportCSV()" style="padding:6px 11px;font-size:11px;">↓ Export CSV</button>
+    </div>
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Host</th><th>IP</th><th>Group</th><th>Status</th><th>Uptime 24h</th><th>Uptime 7d</th><th>Uptime 30d</th><th>Incidents</th><th>Downtime</th><th>Avg Latency</th></tr></thead>
+      <tbody id="rep-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── MAINTENANCE ── -->
+<div class="page" id="page-maint">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔧 Maintenance Windows</div>
+    <button class="btn btnA adm" onclick="openM('mMaint')" style="padding:6px 11px;font-size:11px;">＋ Schedule</button>
+  </div>
+  <div class="card" style="font-size:11px;color:var(--tx2);padding:10px 14px;border-left:3px solid var(--Y);">
+    During maintenance windows, alerts are suppressed for the selected host. Ping data continues to be collected.
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Name</th><th>Host</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="maint-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── USERS ── -->
+<div class="page" id="page-users">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">👥 User Management</div>
+    <button class="btn btnA" onclick="openM('mUser')" style="padding:6px 11px;font-size:11px;">＋ Create User</button>
+  </div>
+  <div class="card" style="font-size:11px;color:var(--tx2);padding:10px 14px;border-left:3px solid var(--acc);">
+    <strong style="color:var(--acc);">Admin</strong> — Full access: add/edit/delete hosts, manage users, change settings.<br/>
+    <strong style="color:var(--tx2);">Read-Only</strong> — Can view dashboard, hosts, alerts, and reports. Cannot modify anything.
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Created</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="users-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── IMPORT / EXPORT ── -->
+<div class="page" id="page-transfer">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">📦 Import / Export Hosts</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card">
+      <div class="ct">↓ Export Hosts</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.8;">Export all monitored hosts to a file. Use this to transfer hosts to another computer running AbayoNet, or as a backup.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btnA" onclick="exportHosts('json')" style="width:100%;">↓ Export as JSON (for re-import)</button>
+        <button class="btn btnS" onclick="exportHosts('csv')" style="width:100%;">↓ Export as CSV (for spreadsheets)</button>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--tx3);">JSON export preserves all host settings and can be imported directly into another AbayoNet instance. CSV is view-only.</div>
+    </div>
+    <div class="card">
+      <div class="ct">↑ Import Hosts</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.8;">Import hosts from a JSON export. Existing hosts (same IP) are skipped. New hosts start monitoring immediately.</p>
+      <div class="import-zone" id="import-zone" onclick="document.getElementById('import-file').click()" ondrop="handleDrop(event)" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')">
+        <div style="font-size:36px;margin-bottom:8px;">📂</div>
+        <div style="font-size:12px;color:var(--tx2);">Click to select or drag & drop JSON file</div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:4px;">Only AbayoNet JSON export files supported</div>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImportFile(event)"/>
+      <div id="import-result" style="display:none;margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;line-height:1.8;"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">📋 How to Transfer Hosts to Another Laptop</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:2.3;">
+      <div><strong style="color:var(--acc);">Step 1</strong> — On this computer: click <strong>"Export as JSON"</strong> above and save the file</div>
+      <div><strong style="color:var(--acc);">Step 2</strong> — Copy the JSON file to the other laptop (USB, email, shared folder, etc.)</div>
+      <div><strong style="color:var(--acc);">Step 3</strong> — On the other laptop: install AbayoNet and start it (double-click START_ABAYONET.bat)</div>
+      <div><strong style="color:var(--acc);">Step 4</strong> — Log in as admin → go to <strong>Import / Export</strong> → click <strong>"Import"</strong> → select the JSON file</div>
+      <div><strong style="color:var(--acc);">Step 5</strong> — All hosts are imported and monitoring begins immediately ✅</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS ── -->
+<div class="page" id="page-settings">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">⚙ Settings</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card">
+      <div class="ct">🎨 Colour Theme</div>
+      <div class="tsws">
+        <div class="tsw act" style="background:linear-gradient(135deg,#060b14,#00c8ff)" onclick="setTheme('','Dark')" title="Dark"></div>
+        <div class="tsw" style="background:linear-gradient(135deg,#f0f5fb,#0057c8)" onclick="setTheme('t-light','Light')" title="Light"></div>
+        <div class="tsw" style="background:linear-gradient(135deg,#000900,#00ff41)" onclick="setTheme('t-matrix','Matrix')" title="Matrix"></div>
+        <div class="tsw" style="background:linear-gradient(135deg,#0d1117,#58a6ff)" onclick="setTheme('t-slate','Slate')" title="Slate"></div>
+      </div>
+      <div style="margin-top:16px;" class="ct">🔑 Change My Password</div>
+      <div class="fg"><label>Current Password</label><input type="password" id="cp-old" placeholder="Current password"/></div>
+      <div class="fg"><label>New Password (min 6 chars)</label><input type="password" id="cp-new" placeholder="New password"/></div>
+      <div class="fg"><label>Confirm New Password</label><input type="password" id="cp-confirm" placeholder="Confirm new password"/></div>
+      <button class="btn btnA" onclick="changePassword()" style="width:100%;margin-top:4px;">Change Password</button>
+    </div>
+    <div class="card adm">
+      <div class="ct">📧 Email Alerts (SMTP)</div>
+      <div class="fg"><label>SMTP Host</label><input id="s-sh" placeholder="smtp.gmail.com"/></div>
+      <div class="fg"><label>SMTP Port</label><input id="s-sp" type="number" placeholder="587"/></div>
+      <div class="fg"><label>Username / Email</label><input id="s-su" placeholder="you@gmail.com"/></div>
+      <div class="fg"><label>Password / App Password</label><input id="s-sw" type="password" placeholder="••••••••"/></div>
+      <button class="btn btnA" onclick="saveSettings()" style="width:100%;">Save Email Settings</button>
+    </div>
+    <div class="card adm">
+      <div class="ct">🗂 Data &amp; Monitoring</div>
+      <div class="fg"><label>Keep data for (days)</label><input id="s-dr" type="number" placeholder="30"/></div>
+      <div class="fg"><label>Alert cooldown (seconds)</label><input id="s-ac" type="number" placeholder="300"/></div>
+      <div class="fg"><label>Dashboard auto-refresh (seconds)</label><input id="s-ri" type="number" placeholder="10"/></div>
+      <div class="fg"><label>Company Name (shown in emails)</label><input id="s-cn" placeholder="My Company"/></div>
+      <button class="btn btnA" onclick="saveSettings()" style="width:100%;">Save Settings</button>
+    </div>
+    <div class="card">
+      <div class="ct">ℹ About AbayoNet</div>
+      <div style="font-size:11px;color:var(--tx2);line-height:2.4;">
+        <div>Version: <strong style="color:var(--acc);">4.0.0 Enterprise</strong></div>
+        <div>Engine: <strong>Python 3 · SQLite WAL mode</strong></div>
+        <div>DB Lock Fix: <strong style="color:var(--G);">✓ Per-thread connection pool</strong></div>
+        <div>Authentication: <strong>Session tokens · 24h expiry</strong></div>
+        <div>Roles: <strong>Admin · Read-Only</strong></div>
+        <div>Database: <strong>data/abayonet.db</strong></div>
+        <div>Logs: <strong>data/abayonet.log</strong></div>
+        <div style="margin-top:6px;color:var(--tx3);font-size:10px;">100% local · No cloud · No subscription</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /wrap -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Add Host -->
+<div class="mbg" id="mAdd">
+  <div class="modal">
+    <div class="mt">🖥 Add New Host</div>
+    <div class="fgrid">
+      <div class="fg"><label>IP Address *</label><input id="h-ip" placeholder="192.168.1.1"/></div>
+      <div class="fg"><label>Display Name</label><input id="h-nm" placeholder="My Router"/></div>
+      <div class="fg"><label>Group</label><input id="h-gp" value="Default" placeholder="Default"/></div>
+      <div class="fg"><label>Location</label><input id="h-loc" placeholder="Server Room A"/></div>
+      <div class="fg"><label>Tags (comma separated)</label><input id="h-tg" placeholder="router,wan"/></div>
+      <div class="fg"><label>Alert Email</label><input id="h-em" type="email" placeholder="alerts@company.com"/></div>
+      <div class="fg"><label>Ping Interval (sec, min 10)</label><input id="h-iv" type="number" value="30" min="10"/></div>
+      <div class="fg"><label>Packet Count (1–20)</label><input id="h-pc" type="number" value="4" min="1" max="20"/></div>
+      <div class="fg"><label>Timeout (ms)</label><input id="h-to" type="number" value="1000" min="200"/></div>
+      <div class="fg"><label>Port Checks (e.g. 80,443,22)</label><input id="h-pt" placeholder="80,443"/></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notes</label><input id="h-nt" placeholder="Optional description or notes"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mAdd')">Cancel</button>
+      <button class="btn btnA" onclick="addHost()">✅ Add &amp; Start Monitoring</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Host -->
+<div class="mbg" id="mEdit">
+  <div class="modal">
+    <div class="mt">✏ Edit Host</div>
+    <input type="hidden" id="eh-id"/>
+    <div class="fgrid">
+      <div class="fg"><label>IP Address</label><input id="eh-ip" readonly style="opacity:.5;cursor:not-allowed;"/></div>
+      <div class="fg"><label>Display Name</label><input id="eh-nm"/></div>
+      <div class="fg"><label>Group</label><input id="eh-gp"/></div>
+      <div class="fg"><label>Location</label><input id="eh-loc"/></div>
+      <div class="fg"><label>Tags</label><input id="eh-tg"/></div>
+      <div class="fg"><label>Alert Email</label><input id="eh-em" type="email"/></div>
+      <div class="fg"><label>Ping Interval (sec)</label><input id="eh-iv" type="number" min="10"/></div>
+      <div class="fg"><label>Packet Count</label><input id="eh-pc" type="number" min="1" max="20"/></div>
+      <div class="fg"><label>Timeout (ms)</label><input id="eh-to" type="number"/></div>
+      <div class="fg"><label>Port Checks</label><input id="eh-pt" placeholder="80,443,22"/></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notes</label><input id="eh-nt"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mEdit')">Cancel</button>
+      <button class="btn btnA" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alert Rule -->
+<div class="mbg" id="mRule">
+  <div class="modal">
+    <div class="mt">📏 New Alert Rule</div>
+    <div class="fg"><label>Rule Name</label><input id="r-nm" placeholder="High Latency Alert"/></div>
+    <div class="fgrid">
+      <div class="fg"><label>Apply to Host (blank = all hosts)</label>
+        <select id="r-hs"><option value="0">— All Hosts —</option></select>
+      </div>
+      <div class="fg"><label>Condition</label>
+        <select id="r-cn">
+          <option value="offline">Host goes offline</option>
+          <option value="online">Host comes back online</option>
+          <option value="latency_gt">Latency &gt; threshold (ms)</option>
+          <option value="loss_gt">Packet loss &gt; threshold (%)</option>
+          <option value="jitter_gt">Jitter &gt; threshold (ms)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Threshold (ms or %)</label><input id="r-th" type="number" placeholder="200"/></div>
+      <div class="fg"><label>Cooldown (minutes)</label><input id="r-cd" type="number" value="5" min="1"/></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notify Email (optional)</label><input id="r-em" type="email" placeholder="ops@company.com"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mRule')">Cancel</button>
+      <button class="btn btnA" onclick="addRule()">Create Rule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Network Scan -->
+<div class="mbg" id="mScan">
+  <div class="modal" style="max-width:580px;">
+    <div class="mt">🔭 Network Discovery Scan</div>
+    <div class="fg"><label>Subnet (CIDR notation)</label>
+      <div style="display:flex;gap:7px;">
+        <input id="scan-sub" placeholder="192.168.1.0/24"/>
+        <button class="btn btnA" onclick="doScan()" style="white-space:nowrap;padding:8px 12px;font-size:11px;">▶ Scan</button>
+      </div>
+    </div>
+    <div id="scan-st" style="font-size:11px;color:var(--tx2);margin-bottom:8px;min-height:16px;"></div>
+    <div class="scangrid" id="scan-res"></div>
+    <div class="mf"><button class="btn btnS" onclick="closeM('mScan')">Close</button></div>
+  </div>
+</div>
+
+<!-- Maintenance -->
+<div class="mbg" id="mMaint">
+  <div class="modal">
+    <div class="mt">🔧 Schedule Maintenance Window</div>
+    <div class="fg"><label>Window Name</label><input id="m-nm" placeholder="Monthly Server Patching"/></div>
+    <div class="fg"><label>Host (blank = all hosts)</label>
+      <select id="m-hs"><option value="">— All Hosts —</option></select>
+    </div>
+    <div class="fgrid">
+      <div class="fg"><label>Start Time</label><input id="m-st" type="datetime-local"/></div>
+      <div class="fg"><label>End Time</label><input id="m-et" type="datetime-local"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mMaint')">Cancel</button>
+      <button class="btn btnA" onclick="addMaint()">Schedule Window</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create User -->
+<div class="mbg" id="mUser">
+  <div class="modal">
+    <div class="mt">👤 Create New User</div>
+    <div class="fgrid">
+      <div class="fg"><label>Username *</label><input id="u-nm" placeholder="johndoe" autocomplete="off"/></div>
+      <div class="fg"><label>Password * (min 6 chars)</label><input id="u-pw" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
+      <div class="fg"><label>Full Name</label><input id="u-fn" placeholder="John Doe"/></div>
+      <div class="fg"><label>Email</label><input id="u-em" type="email" placeholder="john@company.com"/></div>
+      <div class="fg" style="grid-column:1/-1">
+        <label>Role</label>
+        <select id="u-role">
+          <option value="readonly">Read-Only — view everything, cannot modify</option>
+          <option value="admin">Admin — full access including user management</option>
+        </select>
+      </div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px;font-size:11px;color:var(--tx2);margin-top:4px;line-height:1.8;">
+      💡 <strong style="color:var(--Y);">Read-Only</strong> users can view all data but cannot add, edit, or delete anything.<br/>
+      💡 <strong style="color:var(--acc);">Admin</strong> users have full control including creating other users and changing settings.
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mUser')">Cancel</button>
+      <button class="btn btnA" onclick="createUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password -->
+<div class="mbg" id="mResetPw">
+  <div class="modal">
+    <div class="mt">🔑 Reset User Password</div>
+    <input type="hidden" id="rp-uid"/>
+    <div class="fg"><label>User</label><input id="rp-un" readonly style="opacity:.6;cursor:not-allowed;"/></div>
+    <div class="fg"><label>New Password (min 6 chars)</label><input id="rp-pw" type="password" placeholder="New password" autocomplete="new-password"/></div>
+    <div style="font-size:11px;color:var(--Y);margin-bottom:10px;">⚠ This will immediately log out all active sessions for this user.</div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mResetPw')">Cancel</button>
+      <button class="btn btnD" onclick="doResetPw()">Reset Password</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════
+   ABAYONET v4 — Complete Frontend Engine
+   All charts verified working
+════════════════════════════════════════════ */
+const API = window.location.origin;
+
+/* ── State ── */
+let hosts    = [];
+let curId    = null;
+let dH       = 1;       // detail hours
+let SESSION  = null;    // {token, username, role}
+let sbCol    = false;
+let rSec     = 10;      // refresh interval seconds
+let tickN    = 0;
+let allHosts = [];
+
+/* ── Chart instances — kept at module level so we can destroy properly ── */
+const charts = {
+  dash:   null,
+  detail: null,
+  jitter: null
+};
+
+/* helpers */
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ── API ── */
+async function api(method, path, body) {
+  const hdrs = {'Content-Type':'application/json'};
+  if (SESSION?.token) hdrs['Authorization'] = 'Bearer ' + SESSION.token;
+  try {
+    const r = await fetch(API + path, {
+      method,
+      headers: hdrs,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const data = await r.json();
+    if (data?.login_required) { showLogin(); return null; }
+    return data;
+  } catch(e) {
+    toast('⚠ Cannot reach AbayoNet server. Is it running?', 'er');
+    return null;
+  }
+}
+const G = p        => api('GET',    p);
+const P = (p, b)   => api('POST',   p, b);
+const D = p        => api('DELETE', p);
+
+/* ═══════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════ */
+window.onload = async () => {
+  startClock();
+  loadTheme();
+  // Check existing token
+  const saved = localStorage.getItem('abn_token');
+  if (saved) {
+    SESSION = { token: saved };
+    const r = await G('/api/auth/check');
+    if (r?.authenticated) {
+      SESSION = { token: saved, username: r.username, role: r.role };
+      showApp();
+    } else {
+      SESSION = null;
+      localStorage.removeItem('abn_token');
+      showLogin();
+    }
+  } else {
+    showLogin();
+  }
+  $('l-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+  $('l-user').addEventListener('keydown', e => { if (e.key==='Enter') $('l-pass').focus(); });
+};
+
+function showLogin() {
+  $('login-page').classList.add('show');
+  $('topbar').style.display = 'none';
+  $('wrap').style.display   = 'none';
+  setTimeout(() => $('l-user').focus(), 150);
+}
+
+function showApp() {
+  $('login-page').classList.remove('show');
+  $('topbar').style.display = 'flex';
+  $('wrap').style.display   = 'flex';
+  const isAdmin = SESSION?.role === 'admin';
+  document.querySelectorAll('.adm').forEach(el => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
+  $('uc-name').textContent = SESSION?.username || '';
+  $('uc-role').innerHTML = `<span class="rbadge ${SESSION?.role}">${SESSION?.role}</span>`;
+  initApp();
+}
+
+async function doLogin() {
+  const u = $('l-user').value.trim();
+  const p = $('l-pass').value;
+  $('l-err').textContent = '';
+  if (!u || !p) { $('l-err').textContent = 'Enter username and password'; return; }
+  const r = await fetch(API + '/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username: u, password: p})
+  });
+  const data = await r.json();
+  if (data.success) {
+    SESSION = {token: data.token, username: data.username, role: data.role, full_name: data.full_name};
+    localStorage.setItem('abn_token', data.token);
+    showApp();
+  } else {
+    $('l-err').textContent = data.error || 'Login failed';
+    $('l-pass').value = '';
+    $('l-pass').focus();
+  }
+}
+
+async function doLogout() {
+  await P('/api/auth/logout', {});
+  SESSION = null;
+  localStorage.removeItem('abn_token');
+  showLogin();
+  $('l-user').value = ''; $('l-pass').value = ''; $('l-err').textContent = '';
+}
+
+/* ═══════════════════════════════════════════
+   INIT & REFRESH LOOP
+═══════════════════════════════════════════ */
+function initApp() {
+  loadDash();
+  loadSbHosts();
+  loadAlertCount();
+  // Refresh loop — runs every second, triggers data refresh on schedule
+  setInterval(async () => {
+    tickN++;
+    if (tickN % rSec === 0) {
+      await loadSbHosts();
+      await loadAlertCount();
+      const pg = document.querySelector('.page.act');
+      if (!pg) return;
+      if (pg.id === 'page-dash')   await loadDash();
+      if (pg.id === 'page-detail' && curId) await loadDetail(curId, false);
+    }
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+function nav(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('act'));
+  document.querySelectorAll('.sbi').forEach(s => s.classList.remove('act'));
+  $('page-' + name)?.classList.add('act');
+  $('nav-'  + name)?.classList.add('act');
+  const loaders = {
+    hosts:    loadHosts,
+    alerts:   loadAlerts,
+    rules:    loadRules,
+    report:   loadReport,
+    maint:    loadMaint,
+    settings: loadSettings,
+    dash:     loadDash,
+    users:    loadUsers
+  };
+  loaders[name]?.();
+}
+
+/* ═══════════════════════════════════════════
+   CHART HELPERS — correct destroy/create
+═══════════════════════════════════════════ */
+function destroyChart(key) {
+  if (charts[key]) {
+    charts[key].destroy();
+    charts[key] = null;
+  }
+}
+
+/* Build Chart.js default options themed to AbayoNet */
+function chartOpts(yLabel, extra) {
+  const base = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 350 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        labels: {
+          color: '#6888aa',
+          font: { family: "'JetBrains Mono', monospace", size: 10 },
+          boxWidth: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: '#0c1525',
+        borderColor: '#172035',
+        borderWidth: 1,
+        titleColor: '#deeeff',
+        bodyColor: '#6888aa',
+        padding: 10
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#17203520' },
+        ticks: {
+          color: '#6888aa',
+          font: { family: "'JetBrains Mono', monospace", size: 9 },
+          maxTicksLimit: 10,
+          maxRotation: 0
+        }
+      },
+      y: {
+        grid: { color: '#17203535' },
+        ticks: {
+          color: '#6888aa',
+          font: { family: "'JetBrains Mono', monospace", size: 10 }
+        },
+        title: {
+          display: !!yLabel,
+          text: yLabel || '',
+          color: '#6888aa',
+          font: { size: 10 }
+        }
+      }
+    }
+  };
+  return extra ? mergeDeep(base, extra) : base;
+}
+
+function mergeDeep(a, b) {
+  const out = {...a};
+  for (const k of Object.keys(b)) {
+    if (b[k] && typeof b[k]==='object' && !Array.isArray(b[k]) && a[k] && typeof a[k]==='object') {
+      out[k] = mergeDeep(a[k], b[k]);
+    } else {
+      out[k] = b[k];
+    }
+  }
+  return out;
+}
+
+function makeLabels(history) {
+  return history.map(h => {
+    const d = new Date(h.timestamp);
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  });
+}
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════ */
+async function loadDash() {
+  const [d, hs] = await Promise.all([G('/api/dashboard'), G('/api/hosts')]);
+  if (!d || !hs) return;
+  hosts = hs; allHosts = hs;
+  // Top bar stats
+  $('ts-on').textContent  = d.online;
+  $('ts-off').textContent = d.offline;
+  $('ts-deg').textContent = d.degraded;
+  $('ts-lat').textContent = d.avg_latency_1h != null ? d.avg_latency_1h.toFixed(1) : '—';
+  // Stat cards
+  $('dash-stats').innerHTML = `
+    <div class="sc on"><span class="scic">🟢</span><div><div class="scn">${d.online}</div><div class="scl">Online</div></div></div>
+    <div class="sc off"><span class="scic">🔴</span><div><div class="scn">${d.offline}</div><div class="scl">Offline</div></div></div>
+    <div class="sc warn"><span class="scic">⚡</span><div><div class="scn">${d.degraded}</div><div class="scl">Degraded</div></div></div>
+    <div class="sc warn"><span class="scic">🔔</span><div><div class="scn">${d.unack_alerts}</div><div class="scl">Active Alerts</div></div></div>
+    <div class="sc inf"><span class="scic">📡</span><div><div class="scn">${d.avg_latency_1h != null ? d.avg_latency_1h.toFixed(1) : '—'}</div><div class="scl">Avg ms (1h)</div></div></div>
+    <div class="sc inf"><span class="scic">🖥</span><div><div class="scn">${d.total}</div><div class="scl">Total Hosts</div></div></div>`;
+  renderGrid('dash-hg', hs);
+  $('sb-hc').textContent = hs.length;
+  populateSelects(hs);
+  await loadDashAlerts();
+  await loadDashChart(hs);
+}
+
+function filterDash() {
+  const q = $('dsearch').value.toLowerCase();
+  renderGrid('dash-hg', hosts.filter(h =>
+    !q || (h.name||'').toLowerCase().includes(q) ||
+    h.ip.includes(q) || (h.group_name||'').toLowerCase().includes(q) ||
+    (h.tags||'').toLowerCase().includes(q)
+  ));
+}
+
+async function loadDashAlerts() {
+  const al = await G('/api/alerts?limit=12&unack=1');
+  if (!al) return;
+  $('dash-alr').innerHTML = al.length
+    ? al.map(a => `
+      <div style="display:flex;align-items:start;gap:8px;padding:7px 0;border-bottom:1px solid color-mix(in srgb,var(--bd) 50%,transparent);">
+        <span class="sev ${esc(a.severity)}">${esc(a.severity)}</span>
+        <div style="flex:1;min-width:0;font-size:11px;">
+          <div style="font-weight:500;">${esc(a.host_name||'?')} (${esc(a.ip||'')})</div>
+          <div style="color:var(--tx3);font-size:10px;margin-top:1px;">${esc(a.message)}</div>
+          <div style="color:var(--tx3);font-size:9px;">${fmtT(a.timestamp)}</div>
+        </div>
+        <button class="ackb" onclick="ackOne(${a.id})">✓</button>
+      </div>`).join('')
+    : '<div class="no-data"><div class="ni">✅</div>No active alerts</div>';
+}
+
+async function loadDashChart(hs) {
+  // Take up to 6 hosts with the most recent data
+  const slice = hs.slice(0, 6);
+  if (!slice.length) return;
+  const colors = ['#00c8ff','#7b5cff','#00e676','#ff1744','#ffc107','#ff6d00'];
+  let labels = [];
+  const datasets = [];
+
+  for (let i = 0; i < slice.length; i++) {
+    const hist = await G(`/api/host/${slice[i].id}/history?hours=1`);
+    if (!hist || !hist.length) continue;
+    if (!labels.length) labels = makeLabels(hist);
+    datasets.push({
+      label: slice[i].name || slice[i].ip,
+      data: hist.map(h => h.latency_ms),
+      borderColor: colors[i % colors.length],
+      backgroundColor: colors[i % colors.length] + '18',
+      tension: 0.4,
+      fill: false,
+      pointRadius: 0,
+      borderWidth: 2
+    });
+  }
+
+  destroyChart('dash');
+  const ctx = $('c-dash');
+  if (!ctx || !datasets.length) {
+    if (ctx) {
+      ctx.getContext('2d').clearRect(0,0,ctx.width,ctx.height);
+      const c2 = ctx.getContext('2d');
+      c2.fillStyle = '#6888aa';
+      c2.font = '12px Inter';
+      c2.textAlign = 'center';
+      c2.fillText('Collecting data — check back soon', ctx.width/2, 120);
+    }
+    $('dash-chart-note').textContent = 'No data yet';
+    return;
+  }
+  charts.dash = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: chartOpts('Latency (ms)')
+  });
+  $('dash-chart-note').textContent = `${datasets.length} host${datasets.length>1?'s':''} · 1h`;
+}
+
+/* ═══════════════════════════════════════════
+   HOST GRID
+═══════════════════════════════════════════ */
+async function loadHosts() {
+  const hs = await G('/api/hosts');
+  if (!hs) return;
+  hosts = hs; allHosts = hs;
+  renderGrid('hosts-grid', hs);
+  populateGroupFilter(hs);
+}
+
+function renderGrid(elId, hs) {
+  $(elId).innerHTML = hs.length
+    ? hs.map(h => hCard(h)).join('')
+    : '<div class="no-data" style="grid-column:1/-1"><div class="ni">🖥</div>No hosts found. Click "+ Add Host" to get started.</div>';
+}
+
+function hCard(h) {
+  const st  = h.status || 'unknown';
+  const lat = h.latency != null ? h.latency.toFixed(1) : '—';
+  const los = h.loss    != null ? h.loss.toFixed(1)    : '—';
+  const up  = h.uptime_24h != null ? h.uptime_24h.toFixed(1) : '—';
+  const latC = (h.latency||0)>200?'bad':(h.latency||0)>100?'warn':'';
+  const losC = (h.loss||0)>20?'bad':(h.loss||0)>5?'warn':'';
+  const isAdmin = SESSION?.role === 'admin';
+  return `
+<div class="hcard ${h.in_maintenance?'maintenance':st}" onclick="openDetail(${h.id})">
+  ${h.in_maintenance ? '<div class="mbadge">🔧 MAINT</div>' : ''}
+  <div class="hct">
+    <div class="hcs ${st}"></div>
+    <div class="hcn" title="${esc(h.name||h.ip)}">${esc(h.name||h.ip)}</div>
+  </div>
+  <div class="hcip">${esc(h.ip)}</div>
+  ${h.group_name ? `<div class="hcg">${esc(h.group_name)}</div>` : ''}
+  <div class="hcmg">
+    <div class="hcm"><div class="hcmv ${latC}">${lat}</div><div class="hcml">ms</div></div>
+    <div class="hcm"><div class="hcmv ${losC}">${los}%</div><div class="hcml">Loss</div></div>
+    <div class="hcm"><div class="hcmv">${up}%</div><div class="hcml">Up 24h</div></div>
+    <div class="hcm"><div class="hcmv">${h.ttl||'—'}</div><div class="hcml">TTL</div></div>
+  </div>
+  ${isAdmin ? `<div class="hcact" onclick="event.stopPropagation()">
+    <button class="hcab" onclick="openDetail(${h.id})">📊 Detail</button>
+    <button class="hcab" onclick="editById(${h.id})">✏ Edit</button>
+    <button class="hcab del" onclick="delHost(${h.id},event)">🗑</button>
+  </div>` : ''}
+</div>`;
+}
+
+function filterHosts() {
+  const q   = ($('hsearch').value||'').toLowerCase();
+  const grp = $('gf').value;
+  const st  = $('sf').value;
+  const f = allHosts.filter(h =>
+    (!q   || (h.name||'').toLowerCase().includes(q) || h.ip.includes(q) ||
+              (h.group_name||'').toLowerCase().includes(q) || (h.tags||'').toLowerCase().includes(q)) &&
+    (!grp || h.group_name === grp) &&
+    (!st  || h.status === st)
+  );
+  renderGrid('hosts-grid', f);
+}
+
+function populateGroupFilter(hs) {
+  const g = [...new Set(hs.map(h => h.group_name).filter(Boolean))];
+  const el = $('gf'); if (!el) return;
+  const cur = el.value;
+  el.innerHTML = '<option value="">All Groups</option>' + g.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  el.value = cur;
+}
+
+function populateSelects(hs) {
+  ['r-hs'].forEach(sid => {
+    const el = $(sid); if (!el) return;
+    el.innerHTML = '<option value="0">— All Hosts —</option>' +
+      hs.map(h => `<option value="${h.id}">${esc(h.name||h.ip)}</option>`).join('');
+  });
+  ['m-hs'].forEach(sid => {
+    const el = $(sid); if (!el) return;
+    el.innerHTML = '<option value="">— All Hosts —</option>' +
+      hs.map(h => `<option value="${h.id}">${esc(h.name||h.ip)}</option>`).join('');
+  });
+}
+
+/* ═══════════════════════════════════════════
+   HOST DETAIL + CHARTS
+═══════════════════════════════════════════ */
+async function openDetail(id) {
+  curId = id;
+  nav('detail');
+  await loadDetail(id, true);
+}
+
+async function loadDetail(id, resetCharts=true) {
+  const [h, stats] = await Promise.all([
+    G(`/api/host/${id}`),
+    G(`/api/host/${id}/stats?hours=${dH}`)
+  ]);
+  if (!h) return;
+
+  // Header
+  const st = h.status || 'unknown';
+  $('d-name').textContent   = h.name || h.ip;
+  $('d-ip').textContent     = `${h.ip} · Group: ${h.group_name||'—'} · ${h.location||''} · Interval: ${h.ping_interval}s`;
+  $('d-dot').className      = `hcs ${st}`;
+  $('d-badge').className    = `dst ${st}`;
+  $('d-badge').textContent  = st.toUpperCase();
+  $('d-maint').style.display = h.in_maintenance ? 'block' : 'none';
+
+  // Metric boxes
+  if (stats) {
+    const upC  = (stats.uptime_pct||0) < 99 ? ((stats.uptime_pct||0) < 95 ? 'bad' : 'warn') : 'good';
+    const latC = (stats.avg_latency||0) > 200 ? 'bad' : (stats.avg_latency||0) > 100 ? 'warn' : '';
+    $('d-metrics').innerHTML = `
+      <div class="mb"><div class="mbv ${upC}">${(stats.uptime_pct||0).toFixed(2)}%</div><div class="mbl">Uptime (${dH}h)</div></div>
+      <div class="mb"><div class="mbv ${latC}">${stats.avg_latency?.toFixed(1)||'—'}</div><div class="mbl">Avg Latency ms</div></div>
+      <div class="mb"><div class="mbv">${stats.min_latency?.toFixed(1)||'—'}</div><div class="mbl">Min ms</div></div>
+      <div class="mb"><div class="mbv ${(stats.max_latency||0)>200?'bad':''}">${stats.max_latency?.toFixed(1)||'—'}</div><div class="mbl">Max ms</div></div>
+      <div class="mb"><div class="mbv">${stats.p95_latency?.toFixed(1)||'—'}</div><div class="mbl">P95 ms</div></div>
+      <div class="mb"><div class="mbv">${stats.p99_latency?.toFixed(1)||'—'}</div><div class="mbl">P99 ms</div></div>
+      <div class="mb"><div class="mbv ${(stats.avg_loss||0)>5?'bad':''}">${(stats.avg_loss||0).toFixed(1)}%</div><div class="mbl">Avg Pkt Loss</div></div>
+      <div class="mb"><div class="mbv">${stats.avg_jitter?.toFixed(1)||'—'}</div><div class="mbl">Avg Jitter ms</div></div>
+      <div class="mb"><div class="mbv">${stats.total_checks||0}</div><div class="mbl">Total Checks</div></div>`;
+  }
+
+  await loadDetailCharts(id, resetCharts);
+  await loadUBar(id);
+  await loadHostAlerts(id);
+}
+
+async function loadDetailCharts(id, forceReset) {
+  const hist = await G(`/api/host/${id}/history?hours=${dH}`);
+  if (!hist) return;
+
+  if (!hist.length) {
+    destroyChart('detail');
+    destroyChart('jitter');
+    const noData = '<div class="no-data"><div class="ni">📊</div>No data for this time range yet.<br/>Data will appear as pings are collected.</div>';
+    $('c-detail-wrap').innerHTML = noData;
+    $('c-jitter-wrap').innerHTML = noData;
+    return;
+  }
+
+  const labels = makeLabels(hist);
+  const latData = hist.map(h => h.latency_ms);
+  const lossData = hist.map(h => h.packet_loss);
+  const jitterData = hist.map(h => h.jitter_ms);
+
+  /* ── Main Chart: Latency + Packet Loss (dual Y-axis) ── */
+  // Ensure canvas exists (may have been replaced by noData div)
+  if (!$('c-detail')) {
+    $('c-detail-wrap').innerHTML = '<canvas id="c-detail"></canvas>';
+  }
+  destroyChart('detail');
+  charts.detail = new Chart($('c-detail'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Latency (ms)',
+          data: latData,
+          borderColor: '#00c8ff',
+          backgroundColor: 'rgba(0,200,255,0.08)',
+          yAxisID: 'y',
+          tension: 0.4,
+          fill: true,
+          pointRadius: 0,
+          borderWidth: 2,
+          spanGaps: true
+        },
+        {
+          label: 'Packet Loss (%)',
+          data: lossData,
+          borderColor: '#ff1744',
+          backgroundColor: 'transparent',
+          yAxisID: 'y1',
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+          borderWidth: 1.5,
+          borderDash: [5, 4],
+          spanGaps: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color:'#6888aa', font:{family:"'JetBrains Mono',monospace",size:10}, boxWidth:12 } },
+        tooltip: { backgroundColor:'#0c1525', borderColor:'#172035', borderWidth:1, titleColor:'#deeeff', bodyColor:'#6888aa', padding:10 }
+      },
+      scales: {
+        x: {
+          grid: { color: '#17203520' },
+          ticks: { color:'#6888aa', font:{family:"'JetBrains Mono',monospace",size:8}, maxTicksLimit:12, maxRotation:0 }
+        },
+        y: {
+          type: 'linear',
+          position: 'left',
+          grid: { color: '#17203535' },
+          ticks: { color:'#00c8ff', font:{family:"'JetBrains Mono',monospace",size:9} },
+          title: { display:true, text:'Latency (ms)', color:'#00c8ff', font:{size:10} }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { color:'#ff1744', font:{family:"'JetBrains Mono',monospace",size:9} },
+          title: { display:true, text:'Loss (%)', color:'#ff1744', font:{size:10} },
+          min: 0,
+          max: 100
+        }
+      }
+    }
+  });
+
+  /* ── Jitter Chart: Bar chart ── */
+  if (!$('c-jitter')) {
+    $('c-jitter-wrap').innerHTML = '<canvas id="c-jitter"></canvas>';
+  }
+  destroyChart('jitter');
+  charts.jitter = new Chart($('c-jitter'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Jitter (ms)',
+        data: jitterData,
+        backgroundColor: 'rgba(123,92,255,0.45)',
+        borderColor: '#7b5cff',
+        borderWidth: 1,
+        borderRadius: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 350 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color:'#6888aa', font:{family:"'JetBrains Mono',monospace",size:10}, boxWidth:10 } },
+        tooltip: { backgroundColor:'#0c1525', borderColor:'#172035', borderWidth:1, titleColor:'#deeeff', bodyColor:'#6888aa' }
+      },
+      scales: {
+        x: {
+          grid: { color: '#17203520' },
+          ticks: { color:'#6888aa', font:{family:"'JetBrains Mono',monospace",size:8}, maxTicksLimit:10, maxRotation:0 }
+        },
+        y: {
+          grid: { color: '#17203535' },
+          ticks: { color:'#7b5cff', font:{family:"'JetBrains Mono',monospace",size:9} },
+          title: { display:true, text:'Jitter (ms)', color:'#7b5cff', font:{size:10} },
+          min: 0
+        }
+      }
+    }
+  });
+}
+
+async function loadUBar(id) {
+  const hist = await G(`/api/host/${id}/history?hours=24`);
+  if (!hist) return;
+  const N = 48, now = Date.now(), segMs = 30 * 60 * 1000;
+  const segs = Array(N).fill('uk');
+  hist.forEach(h => {
+    const ts = new Date(h.timestamp).getTime();
+    const idx = Math.floor((now - ts) / segMs);
+    if (idx >= 0 && idx < N) segs[N - 1 - idx] = h.status === 'online' ? 'up' : 'dn';
+  });
+  $('ubar').innerHTML = segs.map(x => `<div class="useg ${x}"></div>`).join('');
+  const up = segs.filter(x => x==='up').length;
+  const dn = segs.filter(x => x==='dn').length;
+  const uk = N - up - dn;
+  $('ust').innerHTML = `
+    <span style="color:var(--G)">▲ ${(up/N*100).toFixed(1)}% uptime</span><br/>
+    <span style="color:var(--R)">▼ ${dn * 30} min offline</span><br/>
+    <span style="color:var(--tx3)">${uk * 30} min no data</span>`;
+}
+
+async function loadHostAlerts(id) {
+  const al = await G('/api/alerts?limit=50');
+  const ha = (al||[]).filter(a => a.host_id === id);
+  if (!ha.length) {
+    $('host-alrs').innerHTML = '<div class="no-data"><div class="ni">✅</div>No alerts for this host</div>';
+    return;
+  }
+  $('host-alrs').innerHTML = `
+    <table class="tbl"><thead><tr><th>Time</th><th>Severity</th><th>Message</th><th>Ack'd By</th><th>Action</th></tr></thead>
+    <tbody>${ha.map(a => `
+      <tr>
+        <td style="font-size:9px;color:var(--tx3);white-space:nowrap;">${fmtT(a.timestamp)}</td>
+        <td><span class="sev ${esc(a.severity)}">${esc(a.severity)}</span></td>
+        <td style="font-size:10px;">${esc(a.message)}</td>
+        <td style="font-size:9px;color:var(--tx3);">${esc(a.ack_by||'')}</td>
+        <td>${a.acknowledged
+          ? '<span style="color:var(--G);font-size:10px;">✓</span>'
+          : `<button class="ackb" onclick="ackOne(${a.id})">Ack</button>`}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+function setDH(h, btn) {
+  dH = h;
+  document.querySelectorAll('.cbt').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act');
+  if (curId) loadDetail(curId, true);
+}
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+async function loadSbHosts() {
+  const hs = await G('/api/hosts');
+  if (!hs) return;
+  hosts = hs; allHosts = hs;
+  $('sb-hosts').innerHTML = hs.map(h => `
+    <div class="he ${curId===h.id?'sel':''}" onclick="openDetail(${h.id})">
+      <div class="hdot ${h.status||'unknown'}"></div>
+      <div class="hn">${esc(h.name||h.ip)}</div>
+      <div class="hl">${h.latency!=null?h.latency.toFixed(0)+'ms':'—'}</div>
+    </div>`).join('');
+}
+
+function toggleSb() {
+  sbCol = !sbCol;
+  $('sb').classList.toggle('col', sbCol);
+  $('sbtog').textContent = sbCol ? '▶' : '◀';
+}
+
+/* ═══════════════════════════════════════════
+   HOST ACTIONS
+═══════════════════════════════════════════ */
+async function addHost() {
+  const ip = $('h-ip').value.trim();
+  if (!ip) { toast('IP address is required','er'); return; }
+  const r = await P('/api/hosts', {
+    ip, name:$('h-nm').value.trim()||null,
+    group:$('h-gp').value.trim()||'Default',
+    location:$('h-loc').value.trim(),
+    tags:$('h-tg').value.trim(),
+    alert_email:$('h-em').value.trim(),
+    interval:parseInt($('h-iv').value)||30,
+    packet_count:parseInt($('h-pc').value)||4,
+    timeout_ms:parseInt($('h-to').value)||1000,
+    port_checks:$('h-pt').value.trim(),
+    notes:$('h-nt').value.trim()
+  });
+  if (r?.success) {
+    closeM('mAdd');
+    // Clear form
+    ['h-ip','h-nm','h-tg','h-em','h-nt','h-loc','h-pt'].forEach(i => $(i).value='');
+    $('h-gp').value='Default';
+    await loadDash(); await loadSbHosts();
+    toast(`✅ ${ip} added — monitoring started!`, 'ok');
+  } else {
+    toast('Error: ' + (r?.error||'Unknown'), 'er');
+  }
+}
+
+function editById(id) {
+  const h = allHosts.find(h => h.id===id); if (!h) return;
+  $('eh-id').value=id; $('eh-ip').value=h.ip; $('eh-nm').value=h.name||'';
+  $('eh-gp').value=h.group_name||''; $('eh-loc').value=h.location||'';
+  $('eh-tg').value=h.tags||''; $('eh-em').value=h.alert_email||'';
+  $('eh-iv').value=h.ping_interval; $('eh-pc').value=h.packet_count;
+  $('eh-to').value=h.timeout_ms||1000; $('eh-pt').value=h.port_checks||'';
+  $('eh-nt').value=h.notes||'';
+  openM('mEdit');
+}
+
+function editCurrent() { if (curId) editById(curId); }
+
+async function saveEdit() {
+  const id = parseInt($('eh-id').value);
+  const r = await P(`/api/hosts/${id}`, {
+    name:$('eh-nm').value, group:$('eh-gp').value,
+    location:$('eh-loc').value, tags:$('eh-tg').value,
+    alert_email:$('eh-em').value,
+    interval:parseInt($('eh-iv').value),
+    packet_count:parseInt($('eh-pc').value),
+    timeout_ms:parseInt($('eh-to').value),
+    port_checks:$('eh-pt').value, notes:$('eh-nt').value
+  });
+  if (r?.success) {
+    closeM('mEdit');
+    await loadSbHosts(); await loadHosts();
+    toast('✅ Host updated', 'ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function delHost(id, e) {
+  if (e) e.stopPropagation();
+  if (!confirm('Remove this host and ALL its historical data? This cannot be undone.')) return;
+  await D(`/api/hosts/${id}`);
+  if (curId===id) { curId=null; nav('hosts'); }
+  await loadDash(); await loadSbHosts();
+  toast('Host removed','ok');
+}
+function delCurrent() { if (curId) delHost(curId); }
+
+async function pingNow() {
+  if (!curId) return;
+  const h = allHosts.find(h => h.id===curId); if (!h) return;
+  toast('📡 Pinging ' + h.ip + '...');
+  const r = await P(`/api/ping/${h.ip}`, {});
+  if (!r) return;
+  const st = r.status==='online';
+  toast(`${st?'🟢':'🔴'} ${r.status.toUpperCase()} · ${r.latency?.toFixed(1)||'—'}ms · ${r.loss}% loss`, st?'ok':'er');
+  setTimeout(() => loadDetail(curId, false), 3500);
+}
+
+async function doTrace() {
+  if (!curId) return;
+  const h = allHosts.find(h => h.id===curId); if (!h) return;
+  $('trbox').textContent = 'Tracing route to ' + h.ip + '...\n(This may take up to 45 seconds)';
+  const r = await G(`/api/traceroute/${h.ip}`);
+  $('trbox').textContent = r?.output || 'No output returned.';
+}
+
+/* ═══════════════════════════════════════════
+   ALERTS
+═══════════════════════════════════════════ */
+async function loadAlerts() {
+  const [al, st] = await Promise.all([
+    G('/api/alerts?limit=300'),
+    G('/api/alerts/stats')
+  ]);
+  if (!al) return;
+  if (st) {
+    $('alert-stats-row').innerHTML = `
+      <div class="sc warn" style="padding:10px;"><span class="scic">🕐</span><div><div class="scn" style="font-size:18px;">${st.last_24h}</div><div class="scl">Last 24 Hours</div></div></div>
+      <div class="sc inf"  style="padding:10px;"><span class="scic">📅</span><div><div class="scn" style="font-size:18px;">${st.last_7d}</div><div class="scl">Last 7 Days</div></div></div>
+      <div class="sc off"  style="padding:10px;"><span class="scic">🚨</span><div><div class="scn" style="font-size:18px;">${st.critical_unacked}</div><div class="scl">Critical Unacked</div></div></div>`;
+  }
+  $('alr-body').innerHTML = al.length
+    ? al.map(a => `
+      <tr>
+        <td style="font-size:9px;white-space:nowrap;color:var(--tx3);">${fmtT(a.timestamp)}</td>
+        <td style="font-weight:500;">${esc(a.host_name||'?')}</td>
+        <td><span style="font-family:'JetBrains Mono',monospace;font-size:9px;">${esc(a.ip||'')}</span></td>
+        <td><span class="sev ${esc(a.severity)}">${esc(a.severity)}</span></td>
+        <td style="font-size:10px;">${esc(a.message)}</td>
+        <td style="font-size:9px;color:var(--tx3);">${esc(a.ack_by||'')}</td>
+        <td>${a.acknowledged
+          ? '<span style="color:var(--G);font-size:10px;">✓ Acked</span>'
+          : `<button class="ackb" onclick="ackOne(${a.id})">Ack</button>`}
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--tx3);">No alerts found</td></tr>';
+}
+
+async function loadAlertCount() {
+  const r = await G('/api/alerts/count');
+  if (!r) return;
+  const cnt = r.count;
+  $('abadge').style.display = cnt > 0 ? 'inline' : 'none';
+  if (cnt > 0) $('abadge').textContent = cnt;
+  $('sb-ac').textContent = cnt;
+}
+
+async function ackOne(id) {
+  await P(`/api/alerts/${id}/ack`, {});
+  loadAlerts(); loadAlertCount(); loadDashAlerts();
+  toast('✓ Alert acknowledged', 'ok');
+}
+
+async function ackAll() {
+  await P('/api/alerts/ack_all', {});
+  loadAlerts(); loadAlertCount(); loadDashAlerts();
+  toast('✓ All alerts acknowledged', 'ok');
+}
+
+/* ═══════════════════════════════════════════
+   ALERT RULES
+═══════════════════════════════════════════ */
+async function loadRules() {
+  const r = await G('/api/alert_rules'); if (!r) return;
+  const isAdmin = SESSION?.role==='admin';
+  $('rules-body').innerHTML = r.length
+    ? r.map(x => `
+      <tr>
+        <td style="font-weight:600;">${esc(x.name)}</td>
+        <td>${esc(x.host_name||'All Hosts')}</td>
+        <td><code style="color:var(--acc);font-size:10px;background:var(--bg3);padding:2px 6px;border-radius:4px;">${esc(x.condition)}</code></td>
+        <td>${x.threshold} ${x.condition.includes('loss')?'%':'ms'}</td>
+        <td>${x.cooldown_mins} min</td>
+        <td style="font-size:10px;">${esc(x.notify_email||'—')}</td>
+        <td style="font-size:9px;color:var(--tx3);">${x.last_triggered?fmtT(x.last_triggered):'Never'} (×${x.trigger_count||0})</td>
+        <td><label style="cursor:pointer;font-size:11px;"><input type="checkbox" ${x.enabled?'checked':''} ${!isAdmin?'disabled':''} onchange="toggleRule(${x.id},this.checked)"> On</label></td>
+        <td>${isAdmin?`<button class="ackb" onclick="delRule(${x.id})" style="color:var(--R);border-color:var(--R);">Delete</button>`:''}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" style="text-align:center;padding:18px;color:var(--tx3);">No alert rules. Add one to start receiving notifications.</td></tr>';
+}
+
+async function addRule() {
+  const nm = $('r-nm').value.trim();
+  if (!nm) { toast('Rule name required','er'); return; }
+  const r = await P('/api/alert_rules', {
+    name: nm,
+    host_id: parseInt($('r-hs').value)||0,
+    condition: $('r-cn').value,
+    threshold: parseFloat($('r-th').value)||0,
+    cooldown_mins: parseInt($('r-cd').value)||5,
+    notify_email: $('r-em').value.trim()
+  });
+  if (r?.success) {
+    closeM('mRule'); loadRules();
+    toast('✅ Alert rule created','ok');
+    $('r-nm').value=''; $('r-th').value=''; $('r-em').value='';
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function delRule(id) {
+  if (!confirm('Delete this alert rule?')) return;
+  await D(`/api/alert_rules/${id}`);
+  loadRules(); toast('Rule deleted','ok');
+}
+
+async function toggleRule(id, en) {
+  await P(`/api/alert_rules/${id}/toggle`, {enabled: en?1:0});
+  toast(en ? '✅ Rule enabled' : 'Rule disabled', 'ok');
+}
+
+/* ═══════════════════════════════════════════
+   UPTIME REPORT
+═══════════════════════════════════════════ */
+async function loadReport() {
+  const r = await G('/api/report/uptime'); if (!r) return;
+  const upC = p => p>=99?'good':p>=95?'warn':'bad';
+  $('rep-body').innerHTML = r.length
+    ? r.map(x => `
+      <tr>
+        <td style="font-weight:500;">${esc(x.name)}</td>
+        <td><span style="font-family:'JetBrains Mono',monospace;font-size:10px;">${esc(x.ip)}</span></td>
+        <td>${esc(x.group)}</td>
+        <td><span class="sev ${x.current_status==='online'?'info':x.current_status==='offline'?'critical':'warning'}">${esc(x.current_status||'?')}</span></td>
+        <td><span class="upbar ${upC(x.uptime_1d)}">${x.uptime_1d.toFixed(2)}%</span></td>
+        <td><span class="upbar ${upC(x.uptime_7d)}">${x.uptime_7d.toFixed(2)}%</span></td>
+        <td><span class="upbar ${upC(x.uptime_30d)}">${x.uptime_30d.toFixed(2)}%</span></td>
+        <td>${x.incidents}</td>
+        <td>${x.downtime_mins} min</td>
+        <td>${x.current_latency!=null?x.current_latency.toFixed(1):'—'} ms</td>
+      </tr>`).join('')
+    : '<tr><td colspan="10" style="text-align:center;padding:18px;color:var(--tx3);">No data yet. Data appears as hosts are monitored.</td></tr>';
+}
+
+async function exportCSV() {
+  const r = await fetch(API + '/api/report/export', {
+    headers: { 'Authorization': 'Bearer ' + SESSION?.token }
+  });
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'abayonet_report_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('✅ Report exported as CSV','ok');
+}
+
+/* ═══════════════════════════════════════════
+   MAINTENANCE
+═══════════════════════════════════════════ */
+async function loadMaint() {
+  const r = await G('/api/maintenance'); if (!r) return;
+  const now = new Date(); const isAdmin = SESSION?.role==='admin';
+  $('maint-body').innerHTML = r.length
+    ? r.map(m => {
+        const active = new Date(m.start_time)<=now && new Date(m.end_time)>=now;
+        const past   = new Date(m.end_time) < now;
+        return `
+        <tr>
+          <td style="font-weight:500;">${esc(m.name)}</td>
+          <td>${esc(m.host_name||'All Hosts')}</td>
+          <td style="font-size:10px;">${fmtT(m.start_time)}</td>
+          <td style="font-size:10px;">${fmtT(m.end_time)}</td>
+          <td><span class="sev ${active?'warning':past?'info':'critical'}">${active?'ACTIVE':past?'ENDED':'UPCOMING'}</span></td>
+          <td>${isAdmin?`<button class="ackb" onclick="delMaint(${m.id})" style="color:var(--R);border-color:var(--R);">Delete</button>`:''}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" style="text-align:center;padding:18px;color:var(--tx3);">No maintenance windows scheduled.</td></tr>';
+}
+
+async function addMaint() {
+  const nm = $('m-nm').value.trim();
+  const st = $('m-st').value;
+  const et = $('m-et').value;
+  if (!nm || !st || !et) { toast('Name, start and end time required','er'); return; }
+  if (new Date(et) <= new Date(st)) { toast('End time must be after start time','er'); return; }
+  const r = await P('/api/maintenance', {
+    host_id: $('m-hs').value||null, name:nm, start_time:st, end_time:et
+  });
+  if (r?.success) {
+    closeM('mMaint'); loadMaint(); toast('✅ Maintenance window scheduled','ok');
+    $('m-nm').value='';
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function delMaint(id) {
+  if (!confirm('Delete this maintenance window?')) return;
+  await D(`/api/maintenance/${id}`);
+  loadMaint(); toast('Deleted','ok');
+}
+
+/* ═══════════════════════════════════════════
+   USER MANAGEMENT
+═══════════════════════════════════════════ */
+async function loadUsers() {
+  const r = await G('/api/users'); if (!r) return;
+  $('users-body').innerHTML = r.length
+    ? r.map(u => `
+      <tr>
+        <td style="font-weight:600;font-family:'JetBrains Mono',monospace;">${esc(u.username)}</td>
+        <td>${esc(u.full_name||'—')}</td>
+        <td style="font-size:10px;">${esc(u.email||'—')}</td>
+        <td><span class="user-role ${u.role}">${esc(u.role)}</span></td>
+        <td style="font-size:9px;color:var(--tx3);">${fmtT(u.created_at)}</td>
+        <td style="font-size:9px;color:var(--tx3);">${u.last_login?fmtT(u.last_login):'Never'}</td>
+        <td><span style="font-size:10px;color:${u.active?'var(--G)':'var(--R)'};">${u.active?'✓ Active':'✗ Disabled'}</span></td>
+        <td style="display:flex;gap:4px;">
+          <button class="ackb" onclick="openResetPw(${u.id},'${esc(u.username)}')" title="Reset password">🔑</button>
+          ${u.id!==1?`<button class="ackb" onclick="toggleUser(${u.id},${u.active?0:1})" title="${u.active?'Disable':'Enable'}">${u.active?'⏸':'▶'}</button>`:''}
+          ${u.id!==1?`<button class="ackb" onclick="delUser(${u.id})" style="color:var(--R);border-color:var(--R);" title="Delete user">🗑</button>`:''}
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--tx3);">No users found.</td></tr>';
+}
+
+async function createUser() {
+  const nm  = $('u-nm').value.trim();
+  const pw  = $('u-pw').value;
+  const fn  = $('u-fn').value.trim();
+  const em  = $('u-em').value.trim();
+  const rol = $('u-role').value;
+  if (!nm)     { toast('Username required','er'); return; }
+  if (pw.length<6) { toast('Password must be at least 6 characters','er'); return; }
+  const r = await P('/api/users', {username:nm, password:pw, role:rol, full_name:fn, email:em});
+  if (r?.success) {
+    closeM('mUser'); loadUsers();
+    toast(`✅ User "${nm}" created successfully`, 'ok');
+    ['u-nm','u-pw','u-fn','u-em'].forEach(i => $(i).value='');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+function openResetPw(uid, username) {
+  $('rp-uid').value=uid; $('rp-un').value=username; $('rp-pw').value='';
+  openM('mResetPw');
+}
+
+async function doResetPw() {
+  const uid = parseInt($('rp-uid').value);
+  const pw  = $('rp-pw').value;
+  if (pw.length<6) { toast('Password must be at least 6 characters','er'); return; }
+  const r = await P(`/api/users/${uid}/reset_password`, {password:pw});
+  if (r?.success) {
+    closeM('mResetPw'); loadUsers(); toast('✅ Password reset successfully','ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function toggleUser(uid, active) {
+  await P(`/api/users/${uid}/toggle`, {active});
+  loadUsers(); toast(active ? '✅ User enabled' : 'User disabled','ok');
+}
+
+async function delUser(uid) {
+  if (!confirm('Permanently delete this user? This cannot be undone.')) return;
+  const r = await D(`/api/users/${uid}`);
+  if (r?.success) { loadUsers(); toast('User deleted','ok'); }
+  else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+/* ═══════════════════════════════════════════
+   IMPORT / EXPORT
+═══════════════════════════════════════════ */
+async function exportHosts(format) {
+  const r = await fetch(API + `/api/hosts/export/${format}`, {
+    headers: { 'Authorization': 'Bearer ' + SESSION?.token }
+  });
+  const cd = r.headers.get('Content-Disposition')||'';
+  const match = cd.match(/filename="?([^"]+)"?/);
+  const fname = match ? match[1] : `abayonet_hosts.${format}`;
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  toast(`✅ Hosts exported as ${format.toUpperCase()}`, 'ok');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  $('import-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) readImportFile(file);
+}
+
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (file) readImportFile(file);
+}
+
+async function readImportFile(file) {
+  const res = $('import-result');
+  res.style.display = 'block';
+  res.innerHTML = '<span style="color:var(--Y);">⏳ Reading file...</span>';
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.abayonet_export) {
+      res.innerHTML = '<span style="color:var(--R);">❌ Invalid file — must be an AbayoNet JSON export (not CSV).</span>';
+      return;
+    }
+    res.innerHTML = `<span style="color:var(--Y);">⏳ Importing ${data.host_count} hosts... please wait</span>`;
+    const r = await P('/api/hosts/import', data);
+    if (r?.success) {
+      res.innerHTML = `
+        <span style="color:var(--G);">✅ Import complete!</span><br/>
+        <span style="color:var(--tx2);">
+          ✅ Added: <strong style="color:var(--G);">${r.added}</strong> new hosts<br/>
+          ⏭ Skipped: <strong style="color:var(--Y);">${r.skipped}</strong> (already exist)<br/>
+          ❌ Errors: <strong style="color:${r.errors?'var(--R)':'var(--G)'};">${r.errors}</strong>
+        </span>`;
+      await loadDash(); await loadSbHosts();
+      toast(`✅ Imported ${r.added} hosts`, 'ok');
+    } else {
+      res.innerHTML = `<span style="color:var(--R);">❌ ${esc(r?.error||'Import failed')}</span>`;
+    }
+  } catch(e) {
+    res.innerHTML = `<span style="color:var(--R);">❌ Error reading file: ${esc(e.message)}</span>`;
+  }
+  // Reset file input so same file can be chosen again
+  $('import-file').value = '';
+}
+
+/* ═══════════════════════════════════════════
+   NETWORK SCAN
+═══════════════════════════════════════════ */
+async function doScan() {
+  const sub = $('scan-sub').value.trim();
+  if (!sub) { toast('Enter a subnet','er'); return; }
+  $('scan-st').textContent = '⏳ Scanning ' + sub + ' ... (30–60 seconds, please wait)';
+  $('scan-res').innerHTML = '';
+  const subnet = sub.includes('/') ? sub : sub + '.0/24';
+  const r = await P('/api/scan', {subnet});
+  if (!r) { $('scan-st').textContent = '❌ Scan failed — server error.'; return; }
+  if (!Array.isArray(r)) { $('scan-st').textContent = '❌ ' + (r.error||'Unknown error'); return; }
+  $('scan-st').textContent = `✅ Found ${r.length} live host${r.length!==1?'s':''}`;
+  $('scan-res').innerHTML = r.map(x => `
+    <div class="scancard">
+      <div style="font-size:14px;">🟢</div>
+      <div style="flex:1;min-width:0;">
+        <div class="scanip">${esc(x.ip)}</div>
+        ${x.hostname?`<div style="font-size:9px;color:var(--tx2);">${esc(x.hostname)}</div>`:''}
+        <div style="font-size:9px;color:var(--tx3);">${x.latency_ms!=null?x.latency_ms.toFixed(1):'—'}ms · TTL ${x.ttl||'—'}</div>
+      </div>
+      <button class="btn btnA" onclick="quickAdd('${esc(x.ip)}','${esc(x.hostname||x.ip)}')" style="padding:3px 8px;font-size:9px;">+ Add</button>
+    </div>`).join('');
+}
+
+async function quickAdd(ip, name) {
+  const r = await P('/api/hosts', {ip, name, group:'Scanned', interval:30, packet_count:4});
+  if (r?.success) {
+    await loadSbHosts(); await loadDash();
+    toast(`✅ ${ip} added and monitoring started`, 'ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════ */
+async function loadSettings() {
+  const s = await G('/api/settings'); if (!s) return;
+  $('s-sh').value = s.smtp_host||'';
+  $('s-sp').value = s.smtp_port||'587';
+  $('s-su').value = s.smtp_user||'';
+  $('s-sw').value = s.smtp_pass||'';
+  $('s-dr').value = s.data_retention_days||'30';
+  $('s-ac').value = s.alert_cooldown||'300';
+  $('s-ri').value = s.refresh_interval||'10';
+  $('s-cn').value = s.company_name||'';
+  rSec = parseInt(s.refresh_interval||'10');
+}
+
+async function saveSettings() {
+  const r = await P('/api/settings', {
+    smtp_host:$('s-sh').value,
+    smtp_port:$('s-sp').value,
+    smtp_user:$('s-su').value,
+    smtp_pass:$('s-sw').value,
+    data_retention_days:$('s-dr').value,
+    alert_cooldown:$('s-ac').value,
+    refresh_interval:$('s-ri').value,
+    company_name:$('s-cn').value
+  });
+  if (r?.success) {
+    rSec = parseInt($('s-ri').value)||10;
+    toast('✅ Settings saved', 'ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function changePassword() {
+  const old  = $('cp-old').value;
+  const nw   = $('cp-new').value;
+  const conf = $('cp-confirm').value;
+  if (!old || !nw) { toast('Fill in all password fields','er'); return; }
+  if (nw !== conf) { toast('New passwords do not match','er'); return; }
+  if (nw.length < 6) { toast('Password must be at least 6 characters','er'); return; }
+  const r = await P('/api/users/change_password', {old_password:old, new_password:nw});
+  if (r?.success) {
+    $('cp-old').value=''; $('cp-new').value=''; $('cp-confirm').value='';
+    toast('✅ Password changed successfully', 'ok');
+  } else toast('Error: '+(r?.error||'Incorrect current password'),'er');
+}
+
+/* ═══════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════ */
+function setTheme(cls, name) {
+  document.body.className = cls;
+  localStorage.setItem('abn-theme', cls);
+  document.querySelectorAll('.tsw').forEach(s => s.classList.remove('act'));
+  if (event?.target) event.target.classList.add('act');
+  toast('🎨 Theme: ' + name, 'ok');
+}
+function loadTheme() {
+  const t = localStorage.getItem('abn-theme') || '';
+  document.body.className = t;
+}
+
+/* ═══════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════ */
+function openM(id)  { $(id).classList.add('open'); }
+function closeM(id) { $(id).classList.remove('open'); }
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('mbg')) e.target.classList.remove('open');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.mbg.open').forEach(m => m.classList.remove('open'));
+});
+
+/* ═══════════════════════════════════════════
+   CLOCK & UTILS
+═══════════════════════════════════════════ */
+function startClock() {
+  const tick = () => { const n=new Date(); $('clk').textContent=n.toLocaleTimeString(); };
+  tick(); setInterval(tick, 1000);
+}
+
+function fmtT(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString(undefined, {
+    year:'numeric', month:'short', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
+  });
+}
+
+let _tt;
+function toast(msg, type='') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.className = '', 3200);
+}
+</script>
+</body>
+</html>
