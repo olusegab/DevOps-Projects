@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yomite Store Golo Watch — Pro</title>
+<style>
+:root{
+  --ink:#1c2321;
+  --paper:#f6f4ef;
+  --rail:#dedacc;
+  --line:#c9c4b3;
+  --signal-down:#b3422f;
+  --signal-down-bg:#fbe9e4;
+  --signal-up:#3c6e47;
+  --signal-up-bg:#e8f0e7;
+  --signal-stale:#a8791f;
+  --signal-stale-bg:#fbf0dc;
+  --accent:#1c4f6e;
+  --accent-soft:#dde8ee;
+  --accent2:#7b3f96;
+  --accent2-soft:#f0e8f6;
+  --mono:'Courier New',Courier,monospace;
+  --serif:Georgia,'Times New Roman',serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:15px;}
+.app{max-width:1120px;margin:0 auto;padding:28px 20px 80px;}
+header.masthead{border-bottom:3px solid var(--ink);padding-bottom:14px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px;}
+header.masthead h1{font-size:26px;margin:0;letter-spacing:0.3px;font-weight:700;}
+header.masthead .tag{font-family:var(--mono);font-size:11px;color:#6b665a;text-transform:uppercase;letter-spacing:1.5px;}
+.header-right{text-align:right;}
+.statusline{font-family:var(--mono);font-size:11px;color:#6b665a;}
+.version-tag{font-family:var(--mono);font-size:10px;background:var(--accent);color:#fff;padding:2px 8px;border-radius:2px;display:inline-block;margin-bottom:4px;}
+
+nav.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:22px;flex-wrap:wrap;}
+nav.tabs button{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;background:none;border:none;padding:10px 14px;cursor:pointer;color:#6b665a;border-bottom:3px solid transparent;margin-bottom:-1px;}
+nav.tabs button.active{color:var(--ink);border-bottom:3px solid var(--accent);font-weight:700;}
+nav.tabs button .count{background:var(--signal-down);color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;margin-left:5px;}
+
+section{display:none;}
+section.active{display:block;}
+
+/* SEARCH */
+.search-box{display:flex;gap:8px;margin-bottom:16px;}
+.search-box input{flex:1;font-family:var(--mono);font-size:14px;padding:11px 14px;border:1px solid var(--ink);background:#fff;}
+.search-box button{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px;background:var(--ink);color:var(--paper);border:none;padding:0 18px;cursor:pointer;}
+.search-box button:hover{background:var(--accent);}
+.hint{font-family:var(--mono);font-size:11px;color:#8a8473;margin-bottom:12px;}
+
+/* STORE CARD */
+.store-card{border:1px solid var(--line);background:#fff;padding:18px 20px;margin-bottom:16px;}
+.store-card .row1{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--rail);padding-bottom:10px;margin-bottom:12px;flex-wrap:wrap;gap:6px;}
+.store-card h2{font-size:20px;margin:0;}
+.store-card .id{font-family:var(--mono);color:#6b665a;font-size:13px;}
+.badge{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:4px 10px;border-radius:3px;font-weight:700;display:inline-block;}
+.badge.up{background:var(--signal-up-bg);color:var(--signal-up);}
+.badge.down{background:var(--signal-down-bg);color:var(--signal-down);}
+.badge.unknown{background:#eee;color:#888;}
+.badge.stale{background:var(--signal-stale-bg);color:var(--signal-stale);margin-left:6px;}
+
+.meta-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-family:var(--mono);font-size:11px;color:#6b665a;}
+.meta-row .region-edit{display:flex;align-items:center;gap:6px;}
+.meta-row .region-edit input{font-family:var(--mono);font-size:11px;padding:3px 6px;border:1px solid var(--line);width:130px;}
+.meta-row .uptime{font-weight:700;}
+.meta-row .totaldown{color:var(--signal-down);font-weight:700;}
+
+.toggle-row{display:flex;gap:10px;margin-bottom:12px;}
+.toggle-row button{flex:1;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px;padding:9px;border:1px solid var(--line);background:#fff;cursor:pointer;}
+.toggle-row button.set-up{color:var(--signal-up);}
+.toggle-row button.set-up.selected{background:var(--signal-up);color:#fff;border-color:var(--signal-up);}
+.toggle-row button.set-down{color:var(--signal-down);}
+.toggle-row button.set-down.selected{background:var(--signal-down);color:#fff;border-color:var(--signal-down);}
+
+.field-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.field-row > div{flex:1;min-width:140px;}
+.field-row label{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8a8473;margin-bottom:4px;}
+.field-row input,.field-row select{width:100%;padding:8px;border:1px solid var(--line);font-family:var(--serif);font-size:13px;}
+
+.comment-box textarea{width:100%;font-family:var(--serif);font-size:14px;padding:10px;border:1px solid var(--line);resize:vertical;min-height:60px;}
+.comment-box{display:flex;flex-direction:column;gap:8px;}
+.comment-box .btn-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+.comment-box .save-btn{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px;background:var(--accent);color:#fff;border:none;padding:8px 16px;cursor:pointer;}
+.comment-box .save-btn:disabled{background:#bbb;cursor:not-allowed;}
+.delete-btn{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;background:none;border:1px solid var(--signal-down);color:var(--signal-down);padding:8px 14px;cursor:pointer;}
+.delete-btn:hover{background:var(--signal-down);color:#fff;}
+
+/* HISTORY */
+.history{margin-top:16px;border-top:1px dashed var(--rail);padding-top:12px;}
+.history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.history h4{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8a8473;margin:0;}
+.clear-history-btn{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;background:none;border:1px solid #ccc;color:#999;padding:4px 10px;cursor:pointer;}
+.clear-history-btn:hover{border-color:var(--signal-down);color:var(--signal-down);}
+.history-item{font-size:13px;margin-bottom:10px;padding:8px 10px;border-left:2px solid var(--rail);background:#fafaf8;}
+.history-item.status-down{border-left-color:var(--signal-down);}
+.history-item.status-up{border-left-color:var(--signal-up);}
+.history-item .meta{font-family:var(--mono);font-size:10px;color:#9a9686;margin-bottom:3px;}
+.history-item .duration-tag{font-family:var(--mono);font-size:10px;background:var(--signal-down-bg);color:var(--signal-down);padding:2px 7px;border-radius:10px;display:inline-block;margin-left:6px;}
+
+/* DOWNTIME INCIDENTS PANEL */
+.incidents-panel{margin-top:14px;border:1px solid var(--signal-down-bg);padding:12px 16px;background:var(--signal-down-bg);}
+.incidents-panel h4{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--signal-down);margin:0 0 10px;}
+.incident-row{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;padding:5px 0;border-bottom:1px solid #f0d0ca;}
+.incident-row:last-child{border-bottom:none;}
+.incident-row .inc-dur{font-weight:700;color:var(--signal-down);}
+.incident-row .inc-cause{color:#6b665a;}
+
+/* DASHBOARD */
+.dash-summary{display:flex;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
+.dash-summary .stat{flex:1;min-width:130px;border:1px solid var(--ink);padding:16px;text-align:center;background:#fff;}
+.dash-summary .stat .num{font-size:30px;font-weight:700;font-family:var(--mono);}
+.dash-summary .stat .lbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b665a;margin-top:4px;}
+.dash-summary .stat.down .num{color:var(--signal-down);}
+.dash-summary .stat.up .num{color:var(--signal-up);}
+.dash-summary .stat.stale .num{color:var(--signal-stale);}
+.dash-summary .stat.totaldown .num{color:var(--signal-down);}
+
+.dash-toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.export-btn{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;background:#fff;border:1px solid var(--ink);color:var(--ink);padding:8px 12px;cursor:pointer;white-space:nowrap;}
+.export-btn:hover{background:var(--ink);color:var(--paper);}
+.export-btn.share{background:var(--accent2);color:#fff;border-color:var(--accent2);}
+.export-btn.share:hover{background:#5a2d7a;}
+
+.down-card{border-left:4px solid var(--signal-down);background:#fff;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 18px;margin-bottom:12px;}
+.down-card .row1{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;}
+.down-card h3{margin:0;font-size:17px;}
+.down-card .id{font-family:var(--mono);font-size:12px;color:#6b665a;}
+.down-card .tags{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;}
+.down-card .tag-pill{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.5px;background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:10px;}
+.down-card .tag-pill.red{background:var(--signal-down-bg);color:var(--signal-down);}
+.down-card .reason{margin-top:8px;font-size:14px;font-style:italic;}
+.down-card .meta{font-family:var(--mono);font-size:10px;color:#9a9686;margin-top:6px;}
+.down-card .resolve{margin-top:10px;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;background:none;border:1px solid var(--signal-up);color:var(--signal-up);padding:6px 12px;cursor:pointer;}
+.empty{font-family:var(--mono);font-size:13px;color:#8a8473;text-align:center;padding:30px;border:1px dashed var(--rail);}
+
+/* ALL STORES TABLE */
+.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.toolbar input,.toolbar select{font-family:var(--mono);font-size:12px;padding:8px 10px;border:1px solid var(--line);}
+.toolbar input{flex:1;min-width:160px;}
+
+.list-table{width:100%;border-collapse:collapse;background:#fff;}
+.list-table th{text-align:left;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6b665a;border-bottom:2px solid var(--ink);padding:8px 10px;cursor:pointer;}
+.list-table td{padding:9px 10px;border-bottom:1px solid var(--rail);font-size:13px;font-family:var(--serif);}
+.list-table tr:hover{background:var(--accent-soft);cursor:pointer;}
+.list-table .td-mono{font-family:var(--mono);font-size:12px;}
+.list-table .td-down{color:var(--signal-down);font-family:var(--mono);font-size:12px;font-weight:700;}
+
+/* ADD/BULK FORMS */
+.add-form{background:#fff;border:1px solid var(--line);padding:20px;max-width:420px;}
+.add-form label{display:block;font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#6b665a;margin-bottom:5px;margin-top:14px;}
+.add-form input{width:100%;padding:10px;border:1px solid var(--line);font-family:var(--serif);font-size:14px;}
+.add-form button{margin-top:18px;width:100%;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px;background:var(--ink);color:var(--paper);border:none;padding:12px;cursor:pointer;}
+.add-form .msg{font-family:var(--mono);font-size:12px;margin-top:10px;}
+.add-form .msg.ok{color:var(--signal-up);}
+.add-form .msg.err{color:var(--signal-down);}
+
+.bulk-form{background:#fff;border:1px solid var(--line);padding:20px;max-width:600px;}
+.bulk-form textarea{width:100%;min-height:120px;font-family:var(--mono);font-size:12px;padding:10px;border:1px solid var(--line);}
+.bulk-form button{margin-top:12px;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px;background:var(--ink);color:var(--paper);border:none;padding:10px 18px;cursor:pointer;}
+
+/* REPORTS TAB */
+.report-section{margin-bottom:30px;}
+.report-section h3{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px;}
+.report-filters{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.report-filters select,.report-filters input{font-family:var(--mono);font-size:12px;padding:8px 10px;border:1px solid var(--line);}
+.report-kpis{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.kpi{flex:1;min-width:130px;border:1px solid var(--line);padding:14px;background:#fff;text-align:center;}
+.kpi .knum{font-size:26px;font-weight:700;font-family:var(--mono);}
+.kpi .klbl{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b665a;margin-top:3px;}
+.kpi.red .knum{color:var(--signal-down);}
+.kpi.amber .knum{color:var(--signal-stale);}
+.kpi.green .knum{color:var(--signal-up);}
+
+.report-table{width:100%;border-collapse:collapse;background:#fff;}
+.report-table th{text-align:left;font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6b665a;border-bottom:2px solid var(--ink);padding:7px 10px;}
+.report-table td{padding:8px 10px;border-bottom:1px solid var(--rail);font-size:12px;font-family:var(--mono);}
+.report-table tr:nth-child(even){background:#fafaf8;}
+.report-table .bad{color:var(--signal-down);font-weight:700;}
+.report-table .ok{color:var(--signal-up);}
+
+/* SHARE MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border:2px solid var(--ink);padding:28px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;}
+.modal h3{font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 16px;}
+.modal textarea{width:100%;min-height:140px;font-family:var(--mono);font-size:11px;padding:10px;border:1px solid var(--line);margin-bottom:12px;word-break:break-all;}
+.modal .btn-row{display:flex;gap:10px;flex-wrap:wrap;}
+.modal button{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:9px 14px;border:1px solid var(--ink);background:#fff;cursor:pointer;}
+.modal button.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+.modal button.danger{background:var(--signal-down);color:#fff;border-color:var(--signal-down);}
+.modal .close-x{float:right;font-family:var(--mono);font-size:14px;background:none;border:none;cursor:pointer;color:#999;padding:0;line-height:1;}
+.modal .note{font-family:var(--mono);font-size:10px;color:#8a8473;margin-top:10px;}
+
+/* NOTIFICATION TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:12px;padding:12px 18px;border-radius:2px;z-index:200;opacity:0;transition:opacity 0.3s;pointer-events:none;}
+.toast.show{opacity:1;}
+
+/* Utility */
+.divider{border:none;border-top:1px solid var(--rail);margin:20px 0;}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- Share Modal -->
+<div class="modal-overlay" id="shareModal">
+  <div class="modal">
+    <button class="close-x" id="shareModalClose">✕</button>
+    <h3>Share / Sync Data</h3>
+    <p style="font-family:var(--mono);font-size:11px;color:#6b665a;margin-bottom:12px;">Copy this payload and paste it into a colleague's "Import from Colleague" field to share current data.</p>
+    <textarea id="sharePayload" readonly></textarea>
+    <div class="btn-row">
+      <button class="primary" id="copyPayloadBtn">Copy to Clipboard</button>
+      <button id="shareModalClose2">Close</button>
+    </div>
+    <div class="note">Tip: You can also use Download Backup (JSON) for full backups.</div>
+  </div>
+</div>
+
+<div class="app">
+  <header class="masthead">
+    <div>
+      <h1>Yomite Store Golo Watch</h1>
+      <div class="tag">Enterprise Branch Status Register</div>
+    </div>
+    <div class="header-right">
+      <div class="version-tag">PRO EDITION</div>
+      <div class="statusline" id="lastUpdated">loading…</div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="search" class="active">Search</button>
+    <button data-tab="dashboard">Dashboard <span class="count" id="downCount" style="display:none;"></span></button>
+    <button data-tab="reports">Reports</button>
+    <button data-tab="all">All Stores</button>
+    <button data-tab="add">Add Store</button>
+    <button data-tab="bulk">Bulk Import</button>
+  </nav>
+
+  <!-- SEARCH -->
+  <section id="tab-search" class="active">
+    <div class="search-box">
+      <input id="searchInput" placeholder="Enter store ID or name, e.g. 51829 or Jabi Mall" autocomplete="off">
+      <button id="searchBtn">Search</button>
+    </div>
+    <div class="hint">Search by store ID number or store name. Click any row in All Stores to view here.</div>
+    <div id="searchResult"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard">
+    <div class="dash-summary">
+      <div class="stat down"><div class="num" id="statDown">0</div><div class="lbl">Currently Down</div></div>
+      <div class="stat up"><div class="num" id="statUp">0</div><div class="lbl">Confirmed Up</div></div>
+      <div class="stat stale"><div class="num" id="statStale">0</div><div class="lbl">Not Checked &gt;7d</div></div>
+      <div class="stat totaldown"><div class="num" id="statTotalDownTime">—</div><div class="lbl">Total Downtime (hrs)</div></div>
+      <div class="stat"><div class="num" id="statTotal">0</div><div class="lbl">Total Stores</div></div>
+    </div>
+    <div class="dash-toolbar">
+      <button class="export-btn share" id="shareBtn">Share Data</button>
+      <button class="export-btn" id="importColleagueBtn">Import from Colleague</button>
+      <button class="export-btn" id="backupBtn">Download Backup (JSON)</button>
+      <button class="export-btn" id="restoreBtn">Restore from Backup</button>
+      <input type="file" id="restoreFile" accept=".json" style="display:none;">
+      <button class="export-btn" id="exportDownBtn">Export Down List (CSV)</button>
+    </div>
+    <div id="dashList"></div>
+  </section>
+
+  <!-- REPORTS -->
+  <section id="tab-reports">
+    <div class="report-filters">
+      <select id="reportRegion"><option value="">All Regions</option></select>
+      <select id="reportPeriod">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+        <option value="0">All time</option>
+      </select>
+      <select id="reportCause">
+        <option value="">All Causes</option>
+        <option>Power</option>
+        <option>Network/Internet</option>
+        <option>POS/System</option>
+        <option>Connectivity Provider</option>
+        <option>Other</option>
+      </select>
+      <button class="export-btn" id="exportReportBtn">Export Report (CSV)</button>
+    </div>
+
+    <div class="report-kpis">
+      <div class="kpi red"><div class="knum" id="rTotalIncidents">0</div><div class="klbl">Total Incidents</div></div>
+      <div class="kpi red"><div class="knum" id="rTotalDownHrs">0</div><div class="klbl">Total Downtime (hrs)</div></div>
+      <div class="kpi amber"><div class="knum" id="rAvgDownHrs">0</div><div class="klbl">Avg Downtime / Incident (hrs)</div></div>
+      <div class="kpi amber"><div class="knum" id="rMostAffected">—</div><div class="klbl">Most Affected Store</div></div>
+      <div class="kpi green"><div class="knum" id="rFleetUptime">—</div><div class="klbl">Fleet Uptime %</div></div>
+    </div>
+
+    <div class="report-section">
+      <h3>Downtime Incidents</h3>
+      <table class="report-table" id="reportIncidentsTable">
+        <thead><tr>
+          <th>Store</th><th>Region</th><th>Down At</th><th>Resolved At</th>
+          <th>Duration</th><th>Cause</th><th>Reported By</th><th>Notes</th>
+        </tr></thead>
+        <tbody id="reportIncidentsBody"></tbody>
+      </table>
+    </div>
+
+    <div class="report-section">
+      <h3>Store Downtime Summary</h3>
+      <table class="report-table" id="reportSummaryTable">
+        <thead><tr>
+          <th>Store</th><th>Region</th><th>Incidents</th><th>Total Down (hrs)</th><th>Uptime %</th><th>Last Event</th>
+        </tr></thead>
+        <tbody id="reportSummaryBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ALL STORES -->
+  <section id="tab-all">
+    <div class="toolbar">
+      <input id="filterInput" placeholder="Filter by name, ID, or region...">
+      <select id="filterStatus">
+        <option value="">All statuses</option>
+        <option value="up">Online</option>
+        <option value="down">Down</option>
+        <option value="unknown">Unknown</option>
+      </select>
+      <select id="sortBy">
+        <option value="name">Sort: Name</option>
+        <option value="id">Sort: Store ID</option>
+        <option value="status">Sort: Status</option>
+        <option value="region">Sort: Region</option>
+        <option value="uptime">Sort: Uptime %</option>
+        <option value="downtime">Sort: Total Downtime</option>
+      </select>
+      <button class="export-btn" id="exportAllBtn">Export All (CSV)</button>
+    </div>
+    <table class="list-table">
+      <thead><tr>
+        <th>Store ID</th><th>Name</th><th>Region</th><th>Status</th>
+        <th>Uptime %</th><th>Total Downtime</th><th>Incidents</th>
+      </tr></thead>
+      <tbody id="allStoresBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ADD STORE -->
+  <section id="tab-add">
+    <div class="add-form">
+      <label>Store ID</label>
+      <input id="newId" placeholder="e.g. 51999">
+      <label>Store Name</label>
+      <input id="newName" placeholder="e.g. New Branch">
+      <label>Region (optional)</label>
+      <input id="newRegion" placeholder="e.g. Abuja, Lagos, PH...">
+      <label>Address (optional)</label>
+      <input id="newAddress" placeholder="e.g. 10 High Street, Lagos">
+      <label>Phone (optional)</label>
+      <input id="newPhone" placeholder="e.g. 07007009999">
+      <button id="addBtn">Add Store</button>
+      <div class="msg" id="addMsg"></div>
+    </div>
+
+    <hr class="divider" style="margin-top:30px;">
+    <div style="max-width:500px;margin-top:20px;">
+      <p style="font-family:var(--mono);font-size:11px;color:#6b665a;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px;">Import from Colleague</p>
+      <textarea id="importColleagueText" style="width:100%;min-height:100px;font-family:var(--mono);font-size:11px;padding:10px;border:1px solid var(--line);" placeholder="Paste colleague's shared data payload here..."></textarea>
+      <button id="importColleagueApplyBtn" style="margin-top:10px;font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:1px;background:var(--accent2);color:#fff;border:none;padding:10px 18px;cursor:pointer;">Apply Import</button>
+      <div id="importColleagueMsg" style="font-family:var(--mono);font-size:12px;margin-top:8px;"></div>
+    </div>
+  </section>
+
+  <!-- BULK IMPORT -->
+  <section id="tab-bulk">
+    <div class="bulk-form">
+      <div class="hint" style="margin-bottom:10px;">Paste store entries in the format: Name (#ID), Name (#ID), ... Existing IDs will be skipped.</div>
+      <textarea id="bulkText" placeholder="e.g. New Branch (#52001), Another Branch (#52002)"></textarea>
+      <button id="bulkBtn">Import Stores</button>
+      <div class="msg" id="bulkMsg" style="font-family:var(--mono);font-size:12px;margin-top:10px;"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ========= SEED DATA ========= */
+const RAW_STORES = `Jabi Mall (#51829), GWARINPA (#51806), WUSE II (#51803), GARKI (#51821), Gateway Mall (#51830), Apo Mall (#51832), GADO NASKO WAY (#51834), Nyanya (#51852), Minna (#51855), Barnawa (#51854), Ali Akilu (#51856), Jos (#51860), Polo Park (#51833), Akure Mall (#51835), Awka (#51857), Kwara Mall (#51836), Asaba (#51843), Onitsha (#51866), Bompai (#51848), Benin - Ugbowo (#51845), Benin-Sapele (#51844), New Owerri (#51858), New Owerri (#51858), Warri (#51849), Akobo (#51863), BODIJA (#51798), RING ROAD (#51795), Orita Challenge (#51851), Aba (#51847), Uyo (#51841), Calabar (#51837), Choba (#51853), Shell Road (#51838), Yenagoa (#51861), GRA - PH (#51827), Peter-Odili (#51842), Abiola Way (#51862), Awoyaya (#51868), ABEOKUTA (#51823), SANGOTEDO (#51815), Sawmill - Ikorodu (#51865), Badore (#51840), IKORODU (#51817), CHEVRON (#51805), Ikota (#51867), Prime Mall (#51869), AGUNGI (#51796), JAKANDE (#51824), MAGODO (#51804), OGUDU GRA (#51809), Freedom-Way (#51870), ADMIRALTY (#51791), AGIDINGBI (#51808), GBAGADA (#51802), AROMIRE (#51811), ADMIRALTY 2 (#51812), IJU (#51820), TOYIN (#51792), OGUNNAIKE (#51793), MARYLAND (#51822), OKO OBA (#51819), Jara Mall (#51839), AJOSE (#51801), ILUPEJU (#51816), IKOYI (#51826), YABA (#51807), EGBEDA (#51814), SAKA (#51790), OTA (#51825), Itire (#51831), AJAO (#51800), SURULERE (#51799), IDIMU ROAD (#51818), APAPA (#51794), IKOTUN (#51810), FESTAC (#51797), SATELITE (#51828), Lasu (#51864)`;
+
+const IMPORTED_DETAILS = [{"id":"51829","name":"Jabi Mall","address":"Jabi Lake Mall NG Abuja","phone":"07007009999","region":"Abuja"},{"id":"51806","name":"GWARINPA","address":"Plot 204 Bunkoro District 3rd Avenue, NG Gwarimpa","phone":"07007009999","region":"Gwarimpa"},{"id":"51803","name":"WUSE II","address":"52 Kumasi Crescent off Aminu Kano Street, NG Wuse 2","phone":"07007009999","region":"Wuse 2"},{"id":"51821","name":"GARKI","address":"466 Ahmadu Bello Way Garki II, Abuja","phone":"07007009999","region":"Abuja"},{"id":"51830","name":"Gateway Mall","address":"Novare Gateway Mall Off Umaru Musa Yar'adua Road, NG Abuja","phone":"07007009999","region":"Abuja"},{"id":"51832","name":"Apo Mall","address":"Muritala Muhammad Express Way Guru District Apo, Abuja","phone":"07007009999","region":"Abuja"},{"id":"51834","name":"GADO NASKO WAY","address":"Plot D, 121 Gado Nasko Way Kubwa","phone":"07007009999","region":"Kubwa"},{"id":"51852","name":"Nyanya","address":"Abuja - Keffi Express Way, NG Nyanya","phone":"07007009999","region":"Nyanya"},{"id":"51855","name":"Minna","address":"Beside Total Filling Station, Minna","phone":"07007009999","region":"Minna"},{"id":"51854","name":"Barnawa","address":"1B Zaire Road, Barnawa","phone":"07007009999","region":"Barnawa"},{"id":"51856","name":"Ali Akilu","address":"5 Modibo Adama Off Ali Akilu Road, NG Kaduna","phone":"07007009999","region":"Kaduna"},{"id":"51860","name":"Jos","address":"Opposite King's Bite Along Buruku Bye Pass, NG British American Junction","phone":"07007009999","region":"Jos"},{"id":"51833","name":"Polo Park","address":"Palms Mall Polo Park, Enugu","phone":"07007009999","region":"Enugu"},{"id":"51835","name":"Akure Mall","address":"IGBAKO, ONDO","phone":"09088889999","region":"Ondo"},{"id":"51857","name":"Awka","address":"Along Onitsha-Enugu Express Way, NG Awka","phone":"07007009999","region":"Awka"},{"id":"51836","name":"Kwara Mall","address":"KWARA","phone":"07007009999","region":"Kwara"},{"id":"51843","name":"Asaba","address":"Plot 37 Okpanam Road (Opposite Zenith Bank), Asaba","phone":"07007009999","region":"Asaba"},{"id":"51866","name":"Onitsha","address":"40 Awka Road, NG Onitsha","phone":"07007009999","region":"Onitsha"},{"id":"51848","name":"Bompai","address":"12 Bompai Road Beside Grand Central Hotel, NG Kano","phone":"07007009999","region":"Kano"},{"id":"51845","name":"Benin - Ugbowo","address":"191 City Lagos Road, Benin","phone":"07007009999","region":"Benin"},{"id":"51844","name":"Benin-Sapele","address":"Km 4 Sapele Benin Road, Benin City","phone":"07007009999","region":"Benin City"},{"id":"51858","name":"New Owerri","address":"Concord Avenue, New Owerri","phone":"07007009999","region":"Owerri"},{"id":"51849","name":"Warri","address":"Effurun Sapele Road Beside Ecobank, Warri","phone":"07007009999","region":"Warri"},{"id":"51863","name":"Akobo","address":"Plot 10 Block XXL Bashorun Akobo, NG Ibadan","phone":"07007009999","region":"Ibadan"},{"id":"51798","name":"BODIJA","address":"Awolowo Way, NG Bodija","phone":"07007009999","region":"Ibadan"},{"id":"51795","name":"RING ROAD","address":"6 MKO Abiola Way, NG Ring Road","phone":"07007009999","region":"Ibadan"},{"id":"51851","name":"Orita Challenge","address":"46 Orita Challenge Road Beside First Bank, NG Ibadan","phone":"07007009999","region":"Ibadan"},{"id":"51847","name":"Aba","address":"3 Factory Road Aba, NG Abia State","phone":"07007009999","region":"Aba"},{"id":"51841","name":"Uyo","address":"98 Ikot Ekpene Road, NG Uyo","phone":"07007009999","region":"Uyo"},{"id":"51837","name":"Calabar","address":"Calabar, Cross Rivers","phone":"07007009999","region":"Cross Rivers"},{"id":"51853","name":"Choba","address":"East-West Road Opposite University of Port-Harcourt First Gate Choba","phone":"07007009999","region":"Port Harcourt"},{"id":"51838","name":"Shell Road","address":"Plot 216 PH-Aba Road (Shell Road), NG Port Harcourt","phone":"07007009999","region":"Port Harcourt"},{"id":"51861","name":"Yenagoa","address":"Along Mbiama-Yenagoa Road Beside Zenith Bank","phone":"07007009999","region":"Yenagoa"},{"id":"51827","name":"GRA - PH","address":"44 Olu Obasanjo Road, Port Harcourt","phone":"07007009999","region":"Port Harcourt"},{"id":"51842","name":"Peter-Odili","address":"Plot 216, Port Harcourt / Aba Expressway","phone":"07007009999","region":"Port Harcourt"},{"id":"51862","name":"Abiola Way","address":"Along M.K.O Abiola Way, Beside Vanguard Pharmacy","phone":"07007009999","region":"Ibadan"},{"id":"51868","name":"Awoyaya","address":"BnB Mall By Golf Junction KM 35 Lekki Epe Expressway, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51823","name":"ABEOKUTA","address":"Post Office Road Ibara Roundabout, NG Abeokuta","phone":"07007009999","region":"Abeokuta"},{"id":"51815","name":"SANGOTEDO","address":"Km 34 Lekki Epe Expressway, NG Sangotedo","phone":"07007009999","region":"Lagos"},{"id":"51865","name":"Sawmill - Ikorodu","address":"Ayannusi Estate, Ikorodu - Shagamu Rd","phone":"07007009999","region":"Lagos"},{"id":"51840","name":"Badore","address":"54 Lawyer / Cele Bus Stop Badore Road, Badore","phone":"07007009999","region":"Lagos"},{"id":"51817","name":"IKORODU","address":"78 Tos Benson, NG Ikorodu","phone":"07007009999","region":"Lagos"},{"id":"51805","name":"CHEVRON","address":"Chevron Road, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51867","name":"Ikota","address":"Black Bell Mall Jihua Street Ikota Village, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51869","name":"Prime Mall","address":"Orchid Road, Lagos off Lekki-Epe Expressway","phone":"07007009999","region":"Lagos"},{"id":"51796","name":"AGUNGI","address":"13 Agungi Road Lekki 2","phone":"07007009999","region":"Lagos"},{"id":"51824","name":"JAKANDE","address":"No 1 Ologolo Village Road, NG Jakande","phone":"07007009999","region":"Lagos"},{"id":"51804","name":"MAGODO","address":"66 Adekunle Banjo Street Shangisha, NG Magodo","phone":"07007009999","region":"Lagos"},{"id":"51809","name":"OGUDU GRA","address":"G.R.A Ramat Bus Stop Ogudu Rd, NG Ogudu","phone":"07007009999","region":"Lagos"},{"id":"51870","name":"Freedom-Way","address":"39A Freedom Way Lekki Phase 1, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51791","name":"ADMIRALTY","address":"69B Admiralty Way, NG Lekki Phase 1","phone":"07007009999","region":"Lagos"},{"id":"51808","name":"AGIDINGBI","address":"1 Wempco Road, Agidingbi","phone":"07007009999","region":"Lagos"},{"id":"51802","name":"GBAGADA","address":"1A Idowu Olaitan St, NG Gbagada","phone":"07007009999","region":"Lagos"},{"id":"51811","name":"AROMIRE","address":"11 Aromire Avenue, NG Aromire","phone":"07007009999","region":"Lagos"},{"id":"51812","name":"ADMIRALTY 2","address":"Opposite Lekki Fire Station, NG Lekki Phase 1","phone":"07007009999","region":"Lagos"},{"id":"51820","name":"IJU","address":"123 Iju Road Ifako Ijaiye, NG Iju","phone":"07007009999","region":"Lagos"},{"id":"51792","name":"TOYIN","address":"31/37 Toyin Street Ikeja, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51793","name":"OGUNNAIKE","address":"14C Joel Ogunnaike, NG G.R.A. Ikeja","phone":"07007009999","region":"Lagos"},{"id":"51822","name":"MARYLAND","address":"340/344 Lagos-Ikorodu Road Idiroko Bus Stop, NG Maryland","phone":"07007009999","region":"Lagos"},{"id":"51819","name":"OKO OBA","address":"Labake Estate, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51839","name":"Jara Mall","address":"Jara Mall Simbiat Abiola Way Ikeja, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51801","name":"AJOSE","address":"1A Ajose Adeogun, NG Victoria Island","phone":"07007009999","region":"Lagos"},{"id":"51816","name":"ILUPEJU","address":"21 Coker Road, NG Ilupeju","phone":"07007009999","region":"Lagos"},{"id":"51826","name":"IKOYI","address":"192 Awolowo Road, NG Ikoyi","phone":"07007009999","region":"Lagos"},{"id":"51807","name":"YABA","address":"344 Herbert Macaulay Way, NG Yaba","phone":"07007009999","region":"Lagos"},{"id":"51814","name":"EGBEDA","address":"179 Akowonjo Road, NG Egbeda","phone":"07007009999","region":"Lagos"},{"id":"51790","name":"SAKA","address":"4 Saka Tinubu Street, NG Victoria Island","phone":"07007009999","region":"Lagos"},{"id":"51825","name":"OTA","address":"No 38 Idiroko Road, NG Sango Ota","phone":"07007009999","region":"Ogun"},{"id":"51831","name":"Itire","address":"44, Itire Road","phone":"07007009999","region":"Lagos"},{"id":"51800","name":"AJAO","address":"9A Osolo Way, Ajao","phone":"07007009999","region":"Lagos"},{"id":"51799","name":"SURULERE","address":"86 Bode Thomas Road, NG Surulere","phone":"07007009999","region":"Lagos"},{"id":"51818","name":"IDIMU ROAD","address":"229 - 231 Egbeda - Idimu Road, Idimu","phone":"07007009999","region":"Lagos"},{"id":"51794","name":"APAPA","address":"68 Calcutta Crescent Apapa, Lagos","phone":"07007009999","region":"Lagos"},{"id":"51813","name":"OKOTA","address":"92/94 Ago Palace Way, NG Okota","phone":"07007009999","region":"Lagos"},{"id":"51810","name":"IKOTUN","address":"75 Ikotun-Idimu Road, Ikotun","phone":"07007009999","region":"Lagos"},{"id":"51797","name":"FESTAC","address":"Plot R 1st Avenue Road, NG Festac","phone":"07007009999","region":"Lagos"},{"id":"51828","name":"SATELITE","address":"Old Lasu Road, NG Abule Ado","phone":"07007009999","region":"Lagos"},{"id":"51864","name":"Lasu","address":"KM 4 Lasu-Iba Road Agboroko Bus Stop Ojo Local Government, NG Lagos","phone":"07007009999","region":"Lagos"}];
+
+const STALE_DAYS = 7;
+const SEVERITY_OPTIONS = ['Power','Network/Internet','POS/System','Connectivity Provider','Other'];
+
+/* ========= STATE ========= */
+let stores = [];
+// stores[i] = { id, name, region, address, phone, status, comments: [{text, status, ts, reportedBy, severity, resolvedTs?}] }
+// KEY CONCEPT: when a "down" event is marked online, we attach resolvedTs to the DOWN comment to record duration.
+
+let activeTab = 'search';
+
+/* ========= UTILITIES ========= */
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatDuration(ms){
+  if(!ms || ms < 0) return '—';
+  const mins = Math.floor(ms/60000);
+  if(mins < 1) return '<1m';
+  const days = Math.floor(mins/1440);
+  const hrs = Math.floor((mins%1440)/60);
+  const m = mins%60;
+  let parts = [];
+  if(days) parts.push(days+'d');
+  if(hrs) parts.push(hrs+'h');
+  if(!days && m) parts.push(m+'m');
+  return parts.join(' ') || '<1m';
+}
+
+function formatHrs(ms){
+  if(!ms || ms < 0) return '0';
+  return (ms/3600000).toFixed(1);
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function parseSeed(raw){
+  const seen = {};
+  const out = [];
+  raw.split(',').forEach(chunk=>{
+    const m = chunk.match(/(.+?)\s*\(#(\d+)\)/);
+    if(!m) return;
+    const name = m[1].trim(), id = m[2].trim();
+    if(seen[id]) return;
+    seen[id] = true;
+    out.push({id, name});
+  });
+  return out;
+}
+
+function parseBulk(raw){ return parseSeed(raw); }
+
+function findById(id){
+  const clean = id.replace('#','').trim();
+  return stores.find(s=>s.id===clean);
+}
+
+function findByQuery(q){
+  const clean = q.replace('#','').trim().toLowerCase();
+  return stores.find(s=>s.id===clean) ||
+         stores.find(s=>s.name.toLowerCase()===clean) ||
+         stores.find(s=>s.name.toLowerCase().includes(clean));
+}
+
+function lastCommentTs(store){
+  if(!store.comments.length) return null;
+  return store.comments[store.comments.length-1].ts;
+}
+
+function isStale(store){
+  const ts = lastCommentTs(store);
+  if(!ts) return true;
+  return (Date.now()-ts)/(1000*60*60*24) > STALE_DAYS;
+}
+
+/* ========= DOWNTIME LOGIC ========= */
+// Returns all completed down incidents: {downTs, resolvedTs, durationMs, cause, reportedBy, note}
+function getIncidents(store){
+  const incidents = [];
+  const sorted = store.comments.slice().sort((a,b)=>a.ts-b.ts);
+  let currentDownComment = null;
+  for(const c of sorted){
+    if(c.status === 'down' && !currentDownComment){
+      currentDownComment = c;
+    } else if(c.status === 'up' && currentDownComment){
+      const dur = c.ts - currentDownComment.ts;
+      incidents.push({
+        downTs: currentDownComment.ts,
+        resolvedTs: c.ts,
+        durationMs: dur,
+        cause: currentDownComment.severity || '',
+        reportedBy: currentDownComment.reportedBy || '',
+        note: currentDownComment.text || ''
+      });
+      currentDownComment = null;
+    }
+  }
+  // If currently still down, add an open incident
+  if(currentDownComment && store.status === 'down'){
+    incidents.push({
+      downTs: currentDownComment.ts,
+      resolvedTs: null,
+      durationMs: Date.now() - currentDownComment.ts,
+      cause: currentDownComment.severity || '',
+      reportedBy: currentDownComment.reportedBy || '',
+      note: currentDownComment.text || '',
+      open: true
+    });
+  }
+  return incidents;
+}
+
+function getTotalDowntime(store){
+  return getIncidents(store).reduce((acc,i)=>acc+i.durationMs, 0);
+}
+
+function calcUptime(store){
+  if(!store.comments.length) return null;
+  const sorted = store.comments.slice().sort((a,b)=>a.ts-b.ts);
+  let upMs = 0, totalMs = 0;
+  for(let i=0;i<sorted.length;i++){
+    const start = sorted[i].ts;
+    const end = i+1 < sorted.length ? sorted[i+1].ts : Date.now();
+    const dur = Math.max(0, end-start);
+    totalMs += dur;
+    if(sorted[i].status==='up') upMs += dur;
+  }
+  if(totalMs===0) return null;
+  return Math.round((upMs/totalMs)*100);
+}
+
+function downSince(store){
+  for(let i=store.comments.length-1;i>=0;i--){
+    if(store.comments[i].status==='down') return store.comments[i].ts;
+    else break;
+  }
+  return null;
+}
+
+/* ========= PERSISTENCE ========= */
+async function persist(){
+  try{ localStorage.setItem('storewatch-pro-data', JSON.stringify(stores)); }
+  catch(e){ console.error('save failed', e); }
+  document.getElementById('lastUpdated').textContent = 'Saved ' + new Date().toLocaleString();
+}
+
+function mergeImportedDetails(){
+  IMPORTED_DETAILS.forEach(d=>{
+    let store = stores.find(s=>s.id===d.id);
+    if(store){
+      store.address = d.address; store.phone = d.phone;
+      if(!store.region) store.region = d.region;
+    } else {
+      stores.push({id:d.id, name:d.name, region:d.region, address:d.address, phone:d.phone, status:'unknown', comments:[]});
+    }
+  });
+}
+
+async function loadData(){
+  let saved = null;
+  // Try new key first, then old key for migration
+  try{
+    const raw = localStorage.getItem('storewatch-pro-data') || localStorage.getItem('storewatch-stores-data');
+    if(raw) saved = JSON.parse(raw);
+  }catch(e){ saved = null; }
+
+  if(saved && Array.isArray(saved) && saved.length){
+    stores = saved.map(s=>({region:'', address:'', phone:'', ...s}));
+  } else {
+    const seed = parseSeed(RAW_STORES);
+    stores = seed.map(s=>({id:s.id, name:s.name, region:'', address:'', phone:'', status:'unknown', comments:[]}));
+  }
+
+  let importFlag = null;
+  try{ importFlag = localStorage.getItem('storewatch-pro-import-v1'); }catch(e){}
+  if(!importFlag){
+    mergeImportedDetails();
+    try{ localStorage.setItem('storewatch-pro-import-v1','true'); }catch(e){}
+    await persist();
+  } else {
+    await persist();
+  }
+
+  populateRegionFilter();
+  renderAll();
+}
+
+/* ========= TABS ========= */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    document.getElementById('tab-'+activeTab).classList.add('active');
+    if(activeTab==='dashboard') renderDashboard();
+    if(activeTab==='all') renderAllList();
+    if(activeTab==='reports') renderReports();
+  });
+});
+
+/* ========= SEARCH ========= */
+function doSearch(){
+  const val = document.getElementById('searchInput').value.trim();
+  const resultEl = document.getElementById('searchResult');
+  if(!val){ resultEl.innerHTML=''; return; }
+  const store = findByQuery(val);
+  if(!store){
+    resultEl.innerHTML=`<div class="empty">No store found matching "${escapeHtml(val)}". Check the ID/name or add it under "Add Store".</div>`;
+    return;
+  }
+  renderStoreCard(store, resultEl);
+}
+document.getElementById('searchBtn').addEventListener('click', doSearch);
+document.getElementById('searchInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+
+/* ========= STORE CARD ========= */
+function renderStoreCard(store, container){
+  const badgeClass = store.status==='up'?'up':store.status==='down'?'down':'unknown';
+  const badgeText = store.status==='up'?'Online':store.status==='down'?'Down':'Unknown';
+  const stale = isStale(store);
+  const uptime = calcUptime(store);
+  const totalDownMs = getTotalDowntime(store);
+  const incidents = getIncidents(store);
+
+  const historyHtml = store.comments.length
+    ? store.comments.slice().reverse().map((c,idx)=>{
+        // Find if this down event has a paired up event (resolved)
+        let durationTag = '';
+        if(c.status==='down'){
+          // Look for next up comment after this one
+          const sortedIdx = store.comments.indexOf(c);
+          const nextUp = store.comments.slice(sortedIdx+1).find(x=>x.status==='up');
+          if(nextUp){
+            durationTag = `<span class="duration-tag">Downtime: ${formatDuration(nextUp.ts - c.ts)}</span>`;
+          } else if(store.status==='down'){
+            durationTag = `<span class="duration-tag">Ongoing: ${formatDuration(Date.now()-c.ts)}</span>`;
+          }
+        }
+        return `<div class="history-item status-${c.status}">
+          <div class="meta">${c.status==='down'?'DOWN':'UP'} · ${new Date(c.ts).toLocaleString()}${c.reportedBy?' · by '+escapeHtml(c.reportedBy):''}${c.severity?' · '+escapeHtml(c.severity):''}${durationTag}</div>
+          <div>${escapeHtml(c.text||'(no comment)')}</div>
+        </div>`;
+      }).join('')
+    : '<div class="history-item">No events logged yet.</div>';
+
+  const incidentsHtml = incidents.length > 0 ? `
+    <div class="incidents-panel">
+      <h4>Downtime Incidents (${incidents.length})</h4>
+      ${incidents.map(inc=>`
+        <div class="incident-row">
+          <span>${new Date(inc.downTs).toLocaleString()}</span>
+          <span class="inc-cause">${escapeHtml(inc.cause||'—')}</span>
+          <span class="inc-dur">${inc.open?'⚡ ':''} ${formatDuration(inc.durationMs)}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  container.innerHTML = `
+    <div class="store-card">
+      <div class="row1">
+        <h2>${escapeHtml(store.name)}</h2>
+        <div class="id">#${store.id}</div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <span class="badge ${badgeClass}">${badgeText}</span>
+        ${stale?'<span class="badge stale">Not checked &gt;7d</span>':''}
+      </div>
+      <div class="meta-row">
+        <div class="region-edit">
+          <span>REGION:</span>
+          <input id="regionInput" value="${escapeHtml(store.region||'')}" placeholder="unassigned">
+        </div>
+        ${uptime!==null?`<div class="uptime">UPTIME: ${uptime}%</div>`:''}
+        ${totalDownMs>0?`<div class="totaldown">TOTAL DOWNTIME: ${formatDuration(totalDownMs)}</div>`:''}
+        ${incidents.length>0?`<div style="font-family:var(--mono);font-size:11px;color:var(--signal-down);">INCIDENTS: ${incidents.length}</div>`:''}
+      </div>
+      ${store.address?`<div class="hint" style="margin-bottom:10px;">${escapeHtml(store.address)}${store.phone?' · '+escapeHtml(store.phone):''}</div>`:''}
+      ${incidentsHtml}
+      <div class="toggle-row" style="margin-top:14px;">
+        <button class="set-up ${store.status==='up'?'selected':''}" data-action="up">Mark Online</button>
+        <button class="set-down ${store.status==='down'?'selected':''}" data-action="down">Mark Down</button>
+      </div>
+      <div class="field-row" id="severityRow" style="display:${store.status==='down'?'flex':'none'};">
+        <div>
+          <label>Cause / Severity</label>
+          <select id="severitySelect">
+            <option value="">Select cause...</option>
+            ${SEVERITY_OPTIONS.map(o=>`<option value="${o}">${o}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label>Reported by</label>
+          <input id="reportedByInput" placeholder="Your name">
+        </div>
+      </div>
+      <div class="comment-box">
+        <textarea id="commentText" placeholder="${store.status==='down'?'Reason store is down...':'Optional comment...'}"></textarea>
+        <div class="btn-row">
+          <button class="delete-btn" id="deleteStoreBtn">Delete Store</button>
+          <button class="delete-btn" id="clearHistoryBtn" style="border-color:#999;color:#999;">Clear History</button>
+          <button class="save-btn" id="saveCommentBtn">Save Update</button>
+        </div>
+      </div>
+      <div class="history">
+        <div class="history-header">
+          <h4>Full Event History</h4>
+        </div>
+        ${historyHtml}
+      </div>
+    </div>`;
+
+  let pendingStatus = store.status==='down'?'down':store.status==='up'?'up':null;
+
+  container.querySelector('#regionInput').addEventListener('change', async(e)=>{
+    store.region = e.target.value.trim();
+    await persist(); renderAllList(); populateRegionFilter();
+  });
+
+  container.querySelectorAll('.toggle-row button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      pendingStatus = btn.dataset.action;
+      container.querySelectorAll('.toggle-row button').forEach(b=>b.classList.remove('selected'));
+      btn.classList.add('selected');
+      container.querySelector('#commentText').placeholder = pendingStatus==='down'?'Reason store is down...':'Optional comment...';
+      container.querySelector('#severityRow').style.display = pendingStatus==='down'?'flex':'none';
+    });
+  });
+
+  container.querySelector('#saveCommentBtn').addEventListener('click', async()=>{
+    if(!pendingStatus){ alert('Choose "Mark Online" or "Mark Down" first.'); return; }
+    const text = container.querySelector('#commentText').value.trim();
+    const severity = pendingStatus==='down'?container.querySelector('#severitySelect').value:'';
+    const reportedBy = container.querySelector('#reportedByInput')?container.querySelector('#reportedByInput').value.trim():'';
+
+    // KEY: when marking UP, we record the resolved timestamp on the most recent DOWN comment
+    if(pendingStatus==='up' && store.status==='down'){
+      const lastDown = store.comments.slice().reverse().find(c=>c.status==='down');
+      if(lastDown) lastDown.resolvedTs = Date.now();
+    }
+
+    store.status = pendingStatus;
+    store.comments.push({text, status:pendingStatus, ts:Date.now(), severity, reportedBy});
+    await persist();
+    renderStoreCard(store, container);
+    renderAllList();
+    renderDashboard();
+    showToast(`${store.name} marked ${pendingStatus==='up'?'Online':'Down'}.`);
+  });
+
+  container.querySelector('#deleteStoreBtn').addEventListener('click', async()=>{
+    if(!confirm(`Delete "${store.name}" (#${store.id})? This cannot be undone.`)) return;
+    stores = stores.filter(s=>s.id!==store.id);
+    await persist();
+    container.innerHTML = `<div class="empty">Store #${store.id} deleted.</div>`;
+    renderAllList(); renderDashboard();
+  });
+
+  container.querySelector('#clearHistoryBtn').addEventListener('click', async()=>{
+    if(!confirm(`Clear ALL history for "${store.name}" (#${store.id})? Downtime data will be lost. Cannot be undone.`)) return;
+    store.comments = [];
+    store.status = 'unknown';
+    await persist();
+    renderStoreCard(store, container);
+    renderAllList(); renderDashboard();
+    showToast(`History cleared for ${store.name}.`);
+  });
+}
+
+/* ========= DASHBOARD ========= */
+function renderDashboard(){
+  const downStores = stores.filter(s=>s.status==='down');
+  const upStores = stores.filter(s=>s.status==='up');
+  const staleStores = stores.filter(isStale);
+  const totalDownMs = stores.reduce((acc,s)=>acc+getTotalDowntime(s), 0);
+
+  document.getElementById('statDown').textContent = downStores.length;
+  document.getElementById('statUp').textContent = upStores.length;
+  document.getElementById('statStale').textContent = staleStores.length;
+  document.getElementById('statTotal').textContent = stores.length;
+  document.getElementById('statTotalDownTime').textContent = formatHrs(totalDownMs);
+
+  const countBadge = document.getElementById('downCount');
+  if(downStores.length>0){ countBadge.style.display='inline'; countBadge.textContent=downStores.length; }
+  else countBadge.style.display='none';
+
+  const listEl = document.getElementById('dashList');
+  if(downStores.length===0){
+    listEl.innerHTML='<div class="empty">No stores currently flagged down. All clear.</div>';
+    return;
+  }
+  listEl.innerHTML = downStores.map(s=>{
+    const lastComment = s.comments.slice().reverse().find(c=>c.status==='down');
+    const since = downSince(s);
+    const incidents = getIncidents(s);
+    return `<div class="down-card" data-id="${s.id}">
+      <div class="row1">
+        <h3>${escapeHtml(s.name)}</h3>
+        <div class="id">#${s.id}${s.region?' · '+escapeHtml(s.region):''}</div>
+      </div>
+      <div class="tags">
+        ${since?`<span class="tag-pill red">Down ${formatDuration(Date.now()-since)}</span>`:''}
+        ${lastComment&&lastComment.severity?`<span class="tag-pill">${escapeHtml(lastComment.severity)}</span>`:''}
+        ${lastComment&&lastComment.reportedBy?`<span class="tag-pill">By ${escapeHtml(lastComment.reportedBy)}</span>`:''}
+        ${incidents.length>1?`<span class="tag-pill">${incidents.length} incidents total</span>`:''}
+      </div>
+      <div class="reason">${lastComment?escapeHtml(lastComment.text||'(no reason given)'):'(no reason given)'}</div>
+      <div class="meta">${lastComment?'Flagged '+new Date(lastComment.ts).toLocaleString():''}</div>
+      <button class="resolve" data-id="${s.id}">Mark Online</button>
+    </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('.resolve').forEach(btn=>{
+    btn.addEventListener('click', async()=>{
+      const store = findById(btn.dataset.id);
+      // Record resolvedTs on last down comment
+      const lastDown = store.comments.slice().reverse().find(c=>c.status==='down');
+      if(lastDown) lastDown.resolvedTs = Date.now();
+      store.status = 'up';
+      store.comments.push({text:'Resolved from dashboard', status:'up', ts:Date.now()});
+      await persist();
+      renderDashboard(); renderAllList();
+      showToast(`${store.name} marked Online.`);
+    });
+  });
+}
+
+/* ========= REPORTS ========= */
+function populateRegionFilter(){
+  const regions = [...new Set(stores.map(s=>s.region||'').filter(Boolean))].sort();
+  const sel = document.getElementById('reportRegion');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Regions</option>' + regions.map(r=>`<option value="${r}"${r===cur?' selected':''}>${escapeHtml(r)}</option>`).join('');
+}
+
+function renderReports(){
+  const regionFilter = document.getElementById('reportRegion').value;
+  const periodDays = parseInt(document.getElementById('reportPeriod').value)||0;
+  const causeFilter = document.getElementById('reportCause').value;
+  const since = periodDays > 0 ? Date.now() - periodDays*24*3600000 : 0;
+
+  let filteredStores = stores;
+  if(regionFilter) filteredStores = filteredStores.filter(s=>s.region===regionFilter);
+
+  // Collect all incidents within window
+  let allIncidents = [];
+  filteredStores.forEach(store=>{
+    getIncidents(store).forEach(inc=>{
+      if(since===0 || inc.downTs >= since){
+        if(!causeFilter || inc.cause===causeFilter){
+          allIncidents.push({store, ...inc});
+        }
+      }
+    });
+  });
+
+  allIncidents.sort((a,b)=>b.downTs-a.downTs);
+
+  const totalDownMs = allIncidents.reduce((acc,i)=>acc+i.durationMs,0);
+  const avgDownMs = allIncidents.length ? totalDownMs/allIncidents.length : 0;
+
+  // Most affected store
+  const byStore = {};
+  allIncidents.forEach(i=>{ byStore[i.store.id] = (byStore[i.store.id]||0)+i.durationMs; });
+  const mostAffectedId = Object.keys(byStore).sort((a,b)=>byStore[b]-byStore[a])[0];
+  const mostAffected = mostAffectedId ? findById(mostAffectedId) : null;
+
+  // Fleet uptime: % of time stores were up across all tracked time
+  let fleetUpMs = 0, fleetTotalMs = 0;
+  filteredStores.forEach(s=>{
+    const ut = calcUptime(s);
+    if(ut!==null){ fleetUpMs += ut; fleetTotalMs += 100; }
+  });
+  const fleetUptime = fleetTotalMs>0 ? Math.round(fleetUpMs/fleetTotalMs) : null;
+
+  document.getElementById('rTotalIncidents').textContent = allIncidents.length;
+  document.getElementById('rTotalDownHrs').textContent = formatHrs(totalDownMs);
+  document.getElementById('rAvgDownHrs').textContent = formatHrs(avgDownMs);
+  document.getElementById('rMostAffected').textContent = mostAffected ? mostAffected.name : '—';
+  document.getElementById('rFleetUptime').textContent = fleetUptime!==null ? fleetUptime+'%' : '—';
+
+  // Incidents table
+  document.getElementById('reportIncidentsBody').innerHTML = allIncidents.length
+    ? allIncidents.map(i=>`<tr>
+        <td>${escapeHtml(i.store.name)} <span style="color:#aaa">#${i.store.id}</span></td>
+        <td>${escapeHtml(i.store.region||'—')}</td>
+        <td>${new Date(i.downTs).toLocaleString()}</td>
+        <td>${i.resolvedTs?new Date(i.resolvedTs).toLocaleString():'<span style="color:var(--signal-down)">Ongoing</span>'}</td>
+        <td class="${i.open?'bad':''}">${formatDuration(i.durationMs)}</td>
+        <td>${escapeHtml(i.cause||'—')}</td>
+        <td>${escapeHtml(i.reportedBy||'—')}</td>
+        <td>${escapeHtml(i.note||'—')}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:#8a8473;padding:20px;">No incidents in this period.</td></tr>';
+
+  // Summary table per store
+  const summaryRows = filteredStores.map(s=>{
+    const incs = getIncidents(s).filter(i=>since===0||i.downTs>=since).filter(i=>!causeFilter||i.cause===causeFilter);
+    const downMs = incs.reduce((a,i)=>a+i.durationMs,0);
+    const ut = calcUptime(s);
+    const last = lastCommentTs(s);
+    return {s, incs, downMs, ut, last};
+  }).filter(r=>r.incs.length>0).sort((a,b)=>b.downMs-a.downMs);
+
+  document.getElementById('reportSummaryBody').innerHTML = summaryRows.length
+    ? summaryRows.map(r=>`<tr>
+        <td>${escapeHtml(r.s.name)} <span style="color:#aaa">#${r.s.id}</span></td>
+        <td>${escapeHtml(r.s.region||'—')}</td>
+        <td class="bad">${r.incs.length}</td>
+        <td class="bad">${formatHrs(r.downMs)}</td>
+        <td class="${r.ut!==null&&r.ut<90?'bad':r.ut>=95?'ok':''}">${r.ut!==null?r.ut+'%':'—'}</td>
+        <td>${r.last?new Date(r.last).toLocaleString():'—'}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="6" style="text-align:center;color:#8a8473;padding:20px;">No incidents in this period.</td></tr>';
+}
+
+['reportRegion','reportPeriod','reportCause'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', ()=>{
+    if(activeTab==='reports') renderReports();
+  });
+});
+
+/* ========= ALL STORES ========= */
+function renderAllList(){
+  const filterVal = (document.getElementById('filterInput').value||'').toLowerCase();
+  const statusVal = document.getElementById('filterStatus').value;
+  const sort = document.getElementById('sortBy').value;
+
+  let filtered = stores.filter(s=>{
+    const matchesText = !filterVal || s.name.toLowerCase().includes(filterVal) || s.id.includes(filterVal) || (s.region||'').toLowerCase().includes(filterVal);
+    const matchesStatus = !statusVal || s.status===statusVal;
+    return matchesText && matchesStatus;
+  });
+
+  filtered.sort((a,b)=>{
+    if(sort==='name') return a.name.localeCompare(b.name);
+    if(sort==='id') return Number(a.id)-Number(b.id);
+    if(sort==='status') return a.status.localeCompare(b.status);
+    if(sort==='region') return (a.region||'').localeCompare(b.region||'');
+    if(sort==='uptime') return (calcUptime(b)||0)-(calcUptime(a)||0);
+    if(sort==='downtime') return getTotalDowntime(b)-getTotalDowntime(a);
+    return 0;
+  });
+
+  const body = document.getElementById('allStoresBody');
+  body.innerHTML = filtered.map(s=>{
+    const badgeClass = s.status==='up'?'up':s.status==='down'?'down':'unknown';
+    const badgeText = s.status==='up'?'Online':s.status==='down'?'Down':'Unknown';
+    const uptime = calcUptime(s);
+    const totalDown = getTotalDowntime(s);
+    const incCount = getIncidents(s).length;
+    return `<tr data-id="${s.id}">
+      <td class="td-mono">#${s.id}</td>
+      <td>${escapeHtml(s.name)}</td>
+      <td class="td-mono">${escapeHtml(s.region||'—')}</td>
+      <td><span class="badge ${badgeClass}">${badgeText}</span>${isStale(s)?' <span class="badge stale">stale</span>':''}</td>
+      <td class="td-mono">${uptime!==null?uptime+'%':'—'}</td>
+      <td class="${totalDown>0?'td-down':'td-mono'}">${totalDown>0?formatDuration(totalDown):'—'}</td>
+      <td class="td-mono">${incCount>0?incCount:'—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;font-family:var(--mono);color:#8a8473;">No stores match.</td></tr>';
+
+  body.querySelectorAll('tr[data-id]').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+      document.querySelector('[data-tab="search"]').classList.add('active');
+      document.getElementById('tab-search').classList.add('active');
+      document.getElementById('searchInput').value = row.dataset.id;
+      doSearch();
+    });
+  });
+}
+document.getElementById('filterInput').addEventListener('input', renderAllList);
+document.getElementById('filterStatus').addEventListener('change', renderAllList);
+document.getElementById('sortBy').addEventListener('change', renderAllList);
+
+/* ========= CSV EXPORT ========= */
+function downloadCsv(filename, rows){
+  const csv = rows.map(r=>r.map(cell=>`"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('exportDownBtn').addEventListener('click', ()=>{
+  const rows = [['Store ID','Name','Region','Down Since','Duration (hrs)','Severity','Reported By','Reason']];
+  stores.filter(s=>s.status==='down').forEach(s=>{
+    const inc = getIncidents(s).find(i=>i.open);
+    const lastC = s.comments.slice().reverse().find(c=>c.status==='down');
+    rows.push([s.id,s.name,s.region||'',
+      inc?new Date(inc.downTs).toLocaleString():'',
+      inc?formatHrs(inc.durationMs):'',
+      lastC?.severity||'', lastC?.reportedBy||'', lastC?.text||'']);
+  });
+  downloadCsv('stores-down-'+new Date().toISOString().slice(0,10)+'.csv', rows);
+});
+
+document.getElementById('exportAllBtn').addEventListener('click', ()=>{
+  const rows = [['Store ID','Name','Region','Status','Uptime %','Total Downtime (hrs)','Incidents','Address','Phone']];
+  stores.forEach(s=>{
+    rows.push([s.id,s.name,s.region||'',s.status,calcUptime(s)??'',formatHrs(getTotalDowntime(s)),getIncidents(s).length,s.address||'',s.phone||'']);
+  });
+  downloadCsv('stores-all-'+new Date().toISOString().slice(0,10)+'.csv', rows);
+});
+
+document.getElementById('exportReportBtn').addEventListener('click', ()=>{
+  const regionFilter = document.getElementById('reportRegion').value;
+  const periodDays = parseInt(document.getElementById('reportPeriod').value)||0;
+  const causeFilter = document.getElementById('reportCause').value;
+  const since = periodDays>0?Date.now()-periodDays*24*3600000:0;
+  const rows = [['Store ID','Name','Region','Down At','Resolved At','Duration (hrs)','Open?','Cause','Reported By','Notes']];
+  let filteredStores = regionFilter ? stores.filter(s=>s.region===regionFilter) : stores;
+  filteredStores.forEach(store=>{
+    getIncidents(store).forEach(inc=>{
+      if(since===0||inc.downTs>=since){
+        if(!causeFilter||inc.cause===causeFilter){
+          rows.push([store.id,store.name,store.region||'',
+            new Date(inc.downTs).toLocaleString(),
+            inc.resolvedTs?new Date(inc.resolvedTs).toLocaleString():'Open',
+            formatHrs(inc.durationMs),
+            inc.open?'Yes':'No',
+            inc.cause||'',inc.reportedBy||'',inc.note||'']);
+        }
+      }
+    });
+  });
+  downloadCsv('downtime-report-'+new Date().toISOString().slice(0,10)+'.csv', rows);
+});
+
+/* ========= BACKUP / RESTORE ========= */
+document.getElementById('backupBtn').addEventListener('click', ()=>{
+  const blob = new Blob([JSON.stringify(stores,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='storewatch-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('restoreBtn').addEventListener('click', ()=>{
+  document.getElementById('restoreFile').click();
+});
+
+document.getElementById('restoreFile').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async(evt)=>{
+    try{
+      const data = JSON.parse(evt.target.result);
+      if(!Array.isArray(data)) throw new Error('Invalid format');
+      if(!confirm(`This will replace your current ${stores.length} stores with ${data.length} stores from the backup. Continue?`)) return;
+      stores = data.map(s=>({region:'',address:'',phone:'',...s}));
+      await persist(); populateRegionFilter(); renderAll();
+      showToast('Backup restored successfully.');
+    }catch(err){ alert('Could not read that file. Make sure it is a Store Watch backup JSON file.'); }
+    document.getElementById('restoreFile').value='';
+  };
+  reader.readAsText(file);
+});
+
+/* ========= SHARE / IMPORT COLLEAGUE ========= */
+document.getElementById('shareBtn').addEventListener('click', ()=>{
+  const payload = JSON.stringify(stores);
+  document.getElementById('sharePayload').value = payload;
+  document.getElementById('shareModal').classList.add('open');
+});
+document.getElementById('shareModalClose').addEventListener('click', ()=>document.getElementById('shareModal').classList.remove('open'));
+document.getElementById('shareModalClose2').addEventListener('click', ()=>document.getElementById('shareModal').classList.remove('open'));
+document.getElementById('copyPayloadBtn').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(document.getElementById('sharePayload').value).then(()=>showToast('Copied to clipboard!')).catch(()=>{
+    document.getElementById('sharePayload').select();
+    document.execCommand('copy');
+    showToast('Copied!');
+  });
+});
+
+// Also from dashboard toolbar
+document.getElementById('importColleagueBtn').addEventListener('click', ()=>{
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('active'));
+  document.querySelector('[data-tab="add"]').classList.add('active');
+  document.getElementById('tab-add').classList.add('active');
+  activeTab='add';
+  document.getElementById('importColleagueText').focus();
+});
+
+document.getElementById('importColleagueApplyBtn').addEventListener('click', async()=>{
+  const text = document.getElementById('importColleagueText').value.trim();
+  const msgEl = document.getElementById('importColleagueMsg');
+  if(!text){ msgEl.textContent='Paste data first.'; msgEl.style.color='var(--signal-down)'; return; }
+  try{
+    const data = JSON.parse(text);
+    if(!Array.isArray(data)) throw new Error('Invalid');
+    // Merge: update existing by id, add new ones
+    let added=0, updated=0;
+    data.forEach(incoming=>{
+      const existing = findById(incoming.id);
+      if(existing){
+        // Merge comments: add ones not already present (by ts)
+        const existingTs = new Set(existing.comments.map(c=>c.ts));
+        const newComments = (incoming.comments||[]).filter(c=>!existingTs.has(c.ts));
+        existing.comments.push(...newComments);
+        existing.comments.sort((a,b)=>a.ts-b.ts);
+        // Sync status to latest comment's status
+        if(existing.comments.length){
+          existing.status = existing.comments[existing.comments.length-1].status;
+        }
+        if(incoming.region && !existing.region) existing.region = incoming.region;
+        if(incoming.address && !existing.address) existing.address = incoming.address;
+        if(incoming.phone && !existing.phone) existing.phone = incoming.phone;
+        updated++;
+      } else {
+        stores.push({region:'',address:'',phone:'',...incoming});
+        added++;
+      }
+    });
+    await persist(); populateRegionFilter(); renderAll();
+    msgEl.textContent = `Merged: ${updated} stores updated, ${added} new stores added.`;
+    msgEl.style.color = 'var(--signal-up)';
+    document.getElementById('importColleagueText').value='';
+    showToast('Import applied!');
+  }catch(e){
+    msgEl.textContent='Invalid data. Make sure you paste the exact text from a colleague\'s Share export.';
+    msgEl.style.color='var(--signal-down)';
+  }
+});
+
+/* ========= ADD STORE ========= */
+document.getElementById('addBtn').addEventListener('click', async()=>{
+  const idInput = document.getElementById('newId');
+  const nameInput = document.getElementById('newName');
+  const regionInput = document.getElementById('newRegion');
+  const addressInput = document.getElementById('newAddress');
+  const phoneInput = document.getElementById('newPhone');
+  const msg = document.getElementById('addMsg');
+  const id = idInput.value.replace('#','').trim();
+  const name = nameInput.value.trim();
+  if(!id||!name){ msg.textContent='Enter both a store ID and a name.'; msg.className='msg err'; return; }
+  if(findById(id)){ msg.textContent=`Store ID #${id} already exists.`; msg.className='msg err'; return; }
+  stores.push({id, name, region:regionInput.value.trim(), address:addressInput.value.trim(), phone:phoneInput.value.trim(), status:'unknown', comments:[]});
+  await persist(); populateRegionFilter(); renderAllList();
+  msg.textContent=`Added "${name}" (#${id}).`; msg.className='msg ok';
+  idInput.value=''; nameInput.value=''; regionInput.value=''; addressInput.value=''; phoneInput.value='';
+});
+
+/* ========= BULK IMPORT ========= */
+document.getElementById('bulkBtn').addEventListener('click', async()=>{
+  const text = document.getElementById('bulkText').value;
+  const msg = document.getElementById('bulkMsg');
+  if(!text.trim()){ msg.textContent='Paste store entries first.'; msg.className='msg err'; return; }
+  const parsed = parseBulk(text);
+  if(!parsed.length){ msg.textContent='No valid entries found. Use the format: Name (#ID), Name (#ID)'; msg.className='msg err'; return; }
+  let added=0, skipped=0;
+  parsed.forEach(p=>{ if(findById(p.id)){ skipped++; return; } stores.push({id:p.id,name:p.name,region:'',address:'',phone:'',status:'unknown',comments:[]}); added++; });
+  await persist(); populateRegionFilter(); renderAll();
+  msg.textContent=`Imported ${added} new store(s). Skipped ${skipped} duplicate(s).`; msg.className='msg ok';
+  document.getElementById('bulkText').value='';
+});
+
+/* ========= RENDER ALL ========= */
+function renderAll(){
+  renderDashboard();
+  renderAllList();
+  if(activeTab==='reports') renderReports();
+}
+
+loadData();
+</script>
+</body>
+</html>
