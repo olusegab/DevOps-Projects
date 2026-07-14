@@ -1,0 +1,4 @@
+2026-06-25 05:25:13,929 [INFO] Cleanup: aggregated 0 hours → hourly table, -0 old hourly, -0 port, -0 http, -0 alerts (retention=30d)
+2026-06-25 11:25:16,175 [INFO] Cleanup: aggregated 0 hours → hourly table, -0 old hourly, -0 port, -0 http, -0 alerts (retention=30d)
+2026-06-25 17:25:17,371 [INFO] Cleanup: aggregated 0 hours → hourly table, -0 old hourly, -0 port, -0 http, -0 alerts (retention=30d)
+2026-06-25 23:25:19,432 [INFO] Cleanup: aggregated 0 hours → hourly table, -0 old hourly, -0 port, -0 http, -0 alerts (retention=30d)

@@ -1,0 +1,3114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AbayoNet Enterprise</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ═══ THEMES ═══ */
+:root{
+  --bg:#060b14;--bg2:#0c1525;--bg3:#131e33;--bg4:#1a2844;
+  --acc:#00c8ff;--acc2:#7b5cff;
+  --G:#00e676;--R:#ff1744;--Y:#ffc107;--O:#ff6d00;
+  --tx:#deeeff;--tx2:#6888aa;--tx3:#2a3d58;
+  --bd:#172035;--card:#0c1525;--hov:#111e32;
+  --r:12px;--sh:0 4px 32px #0009;
+}
+.t-light{--bg:#f0f5fb;--bg2:#e4edf8;--bg3:#d6e3f2;--bg4:#c4d4e8;--acc:#0057c8;--acc2:#5c34d4;--G:#007a0a;--R:#c80000;--Y:#b07000;--tx:#0a1525;--tx2:#3a5580;--tx3:#8aadcc;--bd:#b8ccdf;--card:#fff;--hov:#eef4fc;}
+.t-matrix{--bg:#000900;--bg2:#001400;--bg3:#001e00;--bg4:#002800;--acc:#00ff41;--acc2:#00cc33;--G:#00ff41;--R:#ff0000;--Y:#ffff00;--tx:#00ff41;--tx2:#00aa2a;--tx3:#004410;--bd:#003800;--card:#000d00;--hov:#001100;}
+.t-slate{--bg:#0d1117;--bg2:#161b22;--bg3:#21262d;--bg4:#2d333b;--acc:#58a6ff;--acc2:#d2a8ff;--G:#3fb950;--R:#f85149;--Y:#d29922;--tx:#e6edf3;--tx2:#7d8590;--tx3:#3d444d;--bd:#30363d;--card:#161b22;--hov:#1c2128;}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display:flex;flex-direction:column;transition:background .3s,color .3s;}
+
+/* ═══ LOGIN ═══ */
+#login-page{display:none;position:fixed;inset:0;background:var(--bg);z-index:9000;align-items:center;justify-content:center;}
+#login-page.show{display:flex;}
+.login-box{background:var(--bg2);border:1px solid var(--bd);border-radius:20px;padding:40px 36px;width:90%;max-width:400px;box-shadow:0 20px 80px #000a;animation:popIn .3s ease;}
+@keyframes popIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px;}
+.login-gem{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 0 30px color-mix(in srgb,var(--acc) 50%,transparent);}
+.login-name{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:3px;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.login-sub{font-size:10px;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;margin-top:2px;}
+.lf{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
+.lf label{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;}
+.lf input{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:11px 14px;color:var(--tx);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;}
+.lf input:focus{border-color:var(--acc);}
+.login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--acc),var(--acc2));border:none;border-radius:8px;color:#000;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;font-family:'Inter',sans-serif;transition:all .2s;}
+.login-btn:hover{opacity:.88;transform:translateY(-1px);}
+.login-err{color:var(--R);font-size:11px;text-align:center;margin-top:10px;min-height:16px;}
+.login-footer{text-align:center;font-size:10px;color:var(--tx3);margin-top:20px;}
+.rbadge{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;}
+.rbadge.admin{background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc);}
+.rbadge.readonly{background:color-mix(in srgb,var(--tx3) 20%,transparent);color:var(--tx2);}
+
+/* ═══ TOPBAR ═══ */
+#topbar{display:none;align-items:center;gap:10px;background:var(--bg2);border-bottom:2px solid var(--bd);padding:0 16px;height:52px;flex-shrink:0;z-index:50;}
+.logo{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.logo-gem{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px color-mix(in srgb,var(--acc) 50%,transparent);}
+.logo-t{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo-s{font-size:8px;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;}
+.tstat{display:flex;gap:10px;flex:1;justify-content:center;flex-wrap:wrap;}
+.ts{display:flex;align-items:center;gap:4px;font-size:11px;font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+.tsd{width:7px;height:7px;border-radius:50%;}
+.tsd.g{background:var(--G);box-shadow:0 0 6px var(--G);}
+.tsd.r{background:var(--R);box-shadow:0 0 6px var(--R);}
+.tsd.y{background:var(--Y);box-shadow:0 0 6px var(--Y);}
+.tsn{font-weight:700;color:var(--tx);}
+.tsl{color:var(--tx2);}
+.tright{display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;}
+.tbtn{display:flex;align-items:center;gap:4px;padding:5px 9px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;color:var(--tx2);cursor:pointer;font-size:11px;font-family:'Inter',sans-serif;transition:all .18s;white-space:nowrap;user-select:none;}
+.tbtn:hover{background:var(--acc);color:#000;border-color:var(--acc);}
+.tbtn.red:hover{background:var(--R);color:#fff;border-color:var(--R);}
+.abadge{background:var(--R);color:#fff;border-radius:50px;padding:1px 5px;font-size:9px;font-weight:700;min-width:16px;text-align:center;}
+#clk{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--tx3);padding:3px 7px;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;}
+.ldot{width:5px;height:5px;border-radius:50%;background:var(--G);animation:pls 1.4s infinite;display:inline-block;}
+@keyframes pls{0%,100%{opacity:1}50%{opacity:.3}}
+#uchip{display:flex;align-items:center;gap:5px;padding:4px 9px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;font-size:11px;color:var(--tx2);}
+
+/* ═══ LAYOUT ═══ */
+#wrap{display:none;flex:1;overflow:hidden;}
+#sb{width:220px;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;transition:width .25s;flex-shrink:0;overflow:hidden;}
+#sb.col{width:50px;}
+.sbl{padding:10px 10px 3px;font-size:9px;font-weight:700;letter-spacing:2px;color:var(--tx3);text-transform:uppercase;white-space:nowrap;overflow:hidden;}
+.sbi{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;margin:1px 5px;color:var(--tx2);font-size:12px;white-space:nowrap;overflow:hidden;transition:all .15s;user-select:none;}
+.sbi:hover{background:var(--hov);color:var(--tx);}
+.sbi.act{background:linear-gradient(135deg,color-mix(in srgb,var(--acc) 18%,transparent),color-mix(in srgb,var(--acc2) 10%,transparent));color:var(--acc);border:1px solid color-mix(in srgb,var(--acc) 25%,transparent);}
+.sbic{font-size:15px;flex-shrink:0;width:18px;text-align:center;}
+.sbtt{flex:1;}
+.sbct{background:var(--bg4);padding:1px 6px;border-radius:20px;font-size:9px;color:var(--tx3);}
+#sb.col .sbtt,#sb.col .sbct,#sb.col .sbl{display:none;}
+.sbhosts{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--bd) transparent;}
+.he{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:5px;cursor:pointer;margin:1px 5px;font-size:11px;color:var(--tx2);transition:all .13s;}
+.he:hover{background:var(--hov);color:var(--tx);}
+.he.sel{background:color-mix(in srgb,var(--acc) 15%,transparent);color:var(--acc);}
+.hdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.hdot.online{background:var(--G);box-shadow:0 0 5px var(--G);}
+.hdot.offline{background:var(--R);box-shadow:0 0 5px var(--R);animation:pls 1.4s infinite;}
+.hdot.unknown{background:var(--tx3);}
+.hn{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'JetBrains Mono',monospace;font-size:10px;}
+.hl{font-size:9px;color:var(--tx3);}
+.sbtog{margin-top:auto;padding:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--tx3);font-size:16px;border-top:1px solid var(--bd);transition:color .18s;}
+.sbtog:hover{color:var(--acc);}
+
+/* ═══ CONTENT ═══ */
+#content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.page{display:none;flex:1;overflow-y:auto;padding:16px;flex-direction:column;gap:12px;}
+.page.act{display:flex;}
+.page::-webkit-scrollbar{width:5px;}
+.page::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px;}
+.page::-webkit-scrollbar-thumb:hover{background:var(--acc);}
+
+/* ═══ CARDS ═══ */
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:14px;}
+.ct{font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--tx2);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+
+/* ═══ STAT GRID ═══ */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px;}
+.sc{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:10px;transition:all .2s;cursor:default;}
+.sc:hover{border-color:color-mix(in srgb,var(--acc) 40%,transparent);transform:translateY(-1px);}
+.scic{font-size:22px;flex-shrink:0;}
+.scn{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;line-height:1;}
+.scl{font-size:9px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.sc.on .scn{color:var(--G);}
+.sc.off .scn{color:var(--R);}
+.sc.warn .scn{color:var(--Y);}
+.sc.inf .scn{color:var(--acc);}
+
+/* ═══ HOST CARDS ═══ */
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+.hcard{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:12px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:cardIn .25s ease both;}
+.hcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.hcard.online::before{background:linear-gradient(90deg,var(--G),#00b04a);}
+.hcard.offline::before{background:linear-gradient(90deg,var(--R),#c0001a);}
+.hcard.unknown::before{background:var(--bd);}
+.hcard.maintenance::before{background:linear-gradient(90deg,var(--Y),var(--O));}
+.hcard:hover{border-color:color-mix(in srgb,var(--acc) 40%,transparent);transform:translateY(-2px);box-shadow:var(--sh);}
+@keyframes cardIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.hct{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.hcs{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.hcs.online{background:var(--G);box-shadow:0 0 7px var(--G);}
+.hcs.offline{background:var(--R);box-shadow:0 0 7px var(--R);animation:pls 1.4s infinite;}
+.hcs.unknown{background:var(--tx3);}
+.hcn{font-weight:600;font-size:12px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hcip{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);margin-bottom:5px;}
+.hcg{font-size:8px;padding:1px 6px;background:color-mix(in srgb,var(--acc) 15%,transparent);color:var(--acc);border-radius:20px;display:inline-block;margin-bottom:5px;}
+.hcmg{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.hcm{background:var(--bg3);border-radius:5px;padding:5px 6px;text-align:center;}
+.hcmv{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--acc);}
+.hcmv.bad{color:var(--R);}
+.hcmv.warn{color:var(--Y);}
+.hcml{font-size:7px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-top:1px;}
+.hcact{display:flex;gap:4px;margin-top:8px;opacity:0;transition:opacity .15s;}
+.hcard:hover .hcact{opacity:1;}
+.hcab{flex:1;padding:4px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;color:var(--tx2);font-size:10px;cursor:pointer;transition:all .13s;font-family:'Inter',sans-serif;}
+.hcab:hover{background:var(--acc);color:#000;border-color:var(--acc);}
+.hcab.del:hover{background:var(--R);color:#fff;border-color:var(--R);}
+.mbadge{position:absolute;top:8px;right:8px;font-size:8px;background:var(--Y);color:#000;padding:1px 5px;border-radius:3px;font-weight:700;}
+
+/* ═══ DETAIL ═══ */
+.dhead{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--bd);flex-shrink:0;flex-wrap:wrap;}
+.dst{padding:2px 10px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.dst.online{background:color-mix(in srgb,var(--G) 18%,transparent);color:var(--G);border:1px solid color-mix(in srgb,var(--G) 35%,transparent);}
+.dst.offline{background:color-mix(in srgb,var(--R) 18%,transparent);color:var(--R);border:1px solid color-mix(in srgb,var(--R) 35%,transparent);}
+.dst.unknown{background:color-mix(in srgb,var(--tx3) 18%,transparent);color:var(--tx3);border:1px solid var(--bd);}
+.dname{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;}
+.dip{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2);}
+.bkbtn{padding:5px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:6px;color:var(--tx2);cursor:pointer;font-size:11px;transition:all .15s;}
+.bkbtn:hover{background:var(--acc);color:#000;}
+.dbody{padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;}
+.mrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;}
+.mb{background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:10px;text-align:center;}
+.mbv{font-family:'Orbitron',monospace;font-size:17px;font-weight:900;color:var(--acc);}
+.mbv.bad{color:var(--R);}
+.mbv.warn{color:var(--Y);}
+.mbv.good{color:var(--G);}
+.mbl{font-size:8px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-top:3px;}
+/* CHART WRAPPERS — fixed heights so canvas always has room */
+.cw{position:relative;width:100%;height:240px;}
+.cw-sm{position:relative;width:100%;height:180px;}
+.cbts{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;}
+.cbt{padding:4px 9px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;color:var(--tx2);font-size:10px;cursor:pointer;transition:all .15s;font-family:'Inter',sans-serif;}
+.cbt.act{background:var(--acc);color:#000;border-color:var(--acc);}
+.trbox{background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--acc);max-height:160px;min-height:60px;overflow-y:auto;white-space:pre;line-height:1.7;}
+.ubar{display:flex;height:10px;border-radius:5px;overflow:hidden;gap:1px;}
+.useg{flex:1;min-width:2px;border-radius:1px;}
+.useg.up{background:var(--G);}
+.useg.dn{background:var(--R);}
+.useg.uk{background:var(--bd);}
+
+/* ═══ TABLES ═══ */
+.tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.tbl th{text-align:left;padding:7px 10px;background:var(--bg3);color:var(--tx2);font-size:9px;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--bd);white-space:nowrap;}
+.tbl td{padding:7px 10px;border-bottom:1px solid color-mix(in srgb,var(--bd) 50%,transparent);color:var(--tx);vertical-align:middle;}
+.tbl tr:hover td{background:var(--hov);}
+.sev{padding:2px 6px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;display:inline-block;}
+.sev.critical{background:color-mix(in srgb,var(--R) 20%,transparent);color:var(--R);}
+.sev.warning{background:color-mix(in srgb,var(--Y) 20%,transparent);color:var(--Y);}
+.sev.info{background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc);}
+.ackb{padding:2px 7px;background:var(--bg3);border:1px solid var(--bd);border-radius:4px;color:var(--tx2);font-size:9px;cursor:pointer;transition:all .13s;}
+.ackb:hover{background:var(--G);color:#000;border-color:var(--G);}
+.upbar{display:inline-block;padding:2px 8px;border-radius:20px;font-family:'Orbitron',monospace;font-size:10px;font-weight:700;}
+.upbar.good{background:color-mix(in srgb,var(--G) 18%,transparent);color:var(--G);}
+.upbar.warn{background:color-mix(in srgb,var(--Y) 18%,transparent);color:var(--Y);}
+.upbar.bad{background:color-mix(in srgb,var(--R) 18%,transparent);color:var(--R);}
+
+/* ═══ FORMS ═══ */
+.fg{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.fg label{font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;}
+.fg input,.fg select,.fg textarea{background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:8px 11px;color:var(--tx);font-family:'Inter',sans-serif;font-size:12px;outline:none;transition:border-color .15s;width:100%;}
+.fg input:focus,.fg select:focus{border-color:var(--acc);}
+.fg select option{background:var(--bg3);}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.fgrid.s1{grid-template-columns:1fr;}
+.btn{padding:8px 14px;border-radius:7px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;transition:all .18s;}
+.btnA{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#000;}
+.btnA:hover{opacity:.85;transform:translateY(-1px);}
+.btnD{background:var(--R);color:#fff;}
+.btnD:hover{opacity:.85;}
+.btnS{background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);}
+.btnS:hover{background:var(--hov);color:var(--tx);}
+
+/* ═══ MODALS ═══ */
+.mbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(7px);z-index:1000;align-items:center;justify-content:center;}
+.mbg.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:20px;width:92%;max-width:500px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 80px #0009;animation:popIn .25s ease;}
+.mt{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--acc);margin-bottom:14px;}
+.mf{display:flex;gap:7px;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);}
+
+/* ═══ MISC ═══ */
+.tsws{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.tsw{width:36px;height:36px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .18s;}
+.tsw:hover,.tsw.act{border-color:#fff;box-shadow:0 0 10px #fff3;}
+.scangrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:10px;}
+.scancard{background:var(--card);border:1px solid color-mix(in srgb,var(--G) 35%,transparent);border-radius:8px;padding:9px 11px;display:flex;align-items:center;gap:8px;}
+.scanip{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--G);}
+.import-zone{border:2px dashed var(--bd);border-radius:10px;padding:24px;text-align:center;cursor:pointer;transition:all .2s;}
+.import-zone:hover,.import-zone.drag{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 5%,transparent);}
+.user-role{padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;}
+.user-role.admin{background:color-mix(in srgb,var(--acc) 20%,transparent);color:var(--acc);}
+.user-role.readonly{background:color-mix(in srgb,var(--tx3) 20%,transparent);color:var(--tx2);}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--bd);border-radius:30px;padding:8px 20px;font-size:12px;z-index:9999;transition:transform .28s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--sh);pointer-events:none;font-family:'JetBrains Mono',monospace;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.ok{border-color:var(--G);color:var(--G);}
+#toast.er{border-color:var(--R);color:var(--R);}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--acc);}
+
+/* loading spinner */
+.spin{width:20px;height:20px;border:2px solid var(--bd);border-top-color:var(--acc);border-radius:50%;animation:rot .7s linear infinite;display:inline-block;}
+@keyframes rot{to{transform:rotate(360deg)}}
+.no-data{text-align:center;padding:32px;color:var(--tx3);font-size:12px;}
+.no-data .ni{font-size:36px;margin-bottom:8px;}
+.cbt:hover{background:var(--bg2);border-color:var(--acc);}
+.live-btn{display:flex;align-items:center;background:rgba(0,230,118,0.10);border-color:#00e676;color:#00e676;font-weight:700;letter-spacing:0.5px;}
+.live-btn:hover{background:rgba(0,230,118,0.20);}
+.live-btn.act-live{background:rgba(0,230,118,0.22);border-color:#00e676;color:#00e676;box-shadow:0 0 8px rgba(0,230,118,0.35);}
+.live-btn.act-live .ldot{background:#00e676;}
+.live-btn.inactive{background:var(--bg3);border-color:var(--bd);color:var(--tx3);}
+.live-btn.inactive .ldot{background:var(--tx3);animation:none;}
+/* Sensor Data table sums/averages rows */
+.sd-sum td{background:rgba(0,200,255,0.06);font-weight:600;color:var(--tx);}
+.sd-avg td{background:rgba(0,200,255,0.03);font-style:italic;color:var(--tx2);}
+.sd-divider td{background:var(--bg3);font-size:9px;color:var(--tx3);padding:2px 8px;border-top:2px solid var(--bd);letter-spacing:0.5px;text-transform:uppercase;}
+@keyframes fadeIn{from{opacity:0;background:rgba(0,200,255,0.08);}to{opacity:1;background:transparent;}}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══ -->
+<div id="login-page" class="show">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-gem">◈</div>
+      <div><div class="login-name">ABAYONET</div><div class="login-sub">Enterprise Monitor v6.0</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--tx2);text-align:center;margin-bottom:20px;">Sign in to continue</div>
+    <div class="lf"><label>Username</label><input type="text" id="l-user" placeholder="admin" autocomplete="username"/></div>
+    <div class="lf"><label>Password</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"/></div>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-err" id="l-err"></div>
+    <div class="login-footer">AbayoNet Enterprise · Secure local monitoring</div>
+  </div>
+</div>
+
+<!-- ═══ TOPBAR ═══ -->
+<div id="topbar">
+  <div class="logo">
+    <div class="logo-gem">◈</div>
+    <div><div class="logo-t">ABAYONET</div><div class="logo-s">Enterprise Monitor</div></div>
+  </div>
+  <div class="tstat">
+    <div class="ts"><div class="tsd g"></div><span class="tsn" id="ts-on">—</span>&nbsp;<span class="tsl">Online</span></div>
+    <div class="ts"><div class="tsd r"></div><span class="tsn" id="ts-off">—</span>&nbsp;<span class="tsl">Offline</span></div>
+    <div class="ts"><div class="tsd y"></div><span class="tsn" id="ts-deg">—</span>&nbsp;<span class="tsl">Degraded</span></div>
+    <div class="ts">⚡<span class="tsn" id="ts-lat" style="color:var(--acc)">—</span><span class="tsl">ms</span></div>
+    <div class="ts"><span class="ldot"></span>&nbsp;<span class="tsl">LIVE</span></div>
+  </div>
+  <div class="tright">
+    <div id="clk">--:--:--</div>
+    <div id="uchip"><span id="uc-role"></span>&nbsp;<span id="uc-name" style="color:var(--tx);font-weight:600;">—</span></div>
+    <div class="tbtn adm" onclick="openM('mAdd')">＋ Add Host</div>
+    <div class="tbtn adm" onclick="openM('mScan')">🔭 Scan</div>
+    <div class="tbtn" onclick="nav('alerts')">🔔 Alerts<span class="abadge" id="abadge" style="display:none">0</span></div>
+    <div class="tbtn" onclick="nav('report')">📊 Report</div>
+    <div class="tbtn red" onclick="doLogout()">⏏ Logout</div>
+  </div>
+</div>
+
+<!-- ═══ WRAP ═══ -->
+<div id="wrap">
+
+<!-- SIDEBAR -->
+<div id="sb">
+  <div class="sbl">Navigation</div>
+  <div class="sbi act" id="nav-dash"     onclick="nav('dash')">    <span class="sbic">🏠</span><span class="sbtt">Dashboard</span></div>
+  <div class="sbi"     id="nav-hosts"    onclick="nav('hosts')">   <span class="sbic">🖥</span><span class="sbtt">All Hosts</span><span class="sbct" id="sb-hc">0</span></div>
+  <div class="sbi"     id="nav-alerts"   onclick="nav('alerts')">  <span class="sbic">🔔</span><span class="sbtt">Alerts</span><span class="sbct" id="sb-ac">0</span></div>
+  <div class="sbi"     id="nav-rules"    onclick="nav('rules')">   <span class="sbic">📏</span><span class="sbtt">Alert Rules</span></div>
+  <div class="sbi"     id="nav-report"   onclick="nav('report')">  <span class="sbic">📊</span><span class="sbtt">Uptime Report</span></div>
+  <div class="sbi"     id="nav-analysis" onclick="nav('analysis')"><span class="sbic">🔬</span><span class="sbtt">History Analysis</span></div>
+  <div class="sbi"     id="nav-maint"    onclick="nav('maint')">   <span class="sbic">🔧</span><span class="sbtt">Maintenance</span></div>
+  <div class="sbi adm" id="nav-users"    onclick="nav('users')">   <span class="sbic">👥</span><span class="sbtt">User Management</span></div>
+  <div class="sbi adm" id="nav-transfer" onclick="nav('transfer')"><span class="sbic">📦</span><span class="sbtt">Import / Export</span></div>
+  <div class="sbi"     id="nav-settings" onclick="nav('settings')"><span class="sbic">⚙</span><span class="sbtt">Settings</span></div>
+  <div class="sbl" style="margin-top:6px">Live Hosts</div>
+  <div class="sbhosts" id="sb-hosts"></div>
+  <div class="sbtog" id="sbtog" onclick="toggleSb()">◀</div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+<!-- ── DASHBOARD ── -->
+<div class="page act" id="page-dash">
+  <div class="sgrid" id="dash-stats"></div>
+  <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:12px;">
+    <div class="card">
+      <div class="ct" style="justify-content:space-between;">
+        <span>📈 Network Latency — Last 1 Hour</span>
+        <span id="dash-chart-note" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;font-weight:400;letter-spacing:0;text-transform:none;"></span>
+      </div>
+      <div class="cw"><canvas id="c-dash"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct">🔔 Active Alerts</div>
+      <div id="dash-alr" style="overflow-y:auto;max-height:248px;"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct" style="justify-content:space-between;">
+      <span>🖥 Host Status Board</span>
+      <input id="dsearch" placeholder="Filter hosts..." oninput="filterDash()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:4px 9px;color:var(--tx);font-size:11px;outline:none;width:160px;"/>
+    </div>
+    <div class="hgrid" id="dash-hg"></div>
+  </div>
+</div>
+
+<!-- ── HOSTS ── -->
+<div class="page" id="page-hosts">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <div style="flex:1;min-width:160px;display:flex;align-items:center;gap:7px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:0 10px;">
+      <span style="color:var(--tx3);">🔍</span>
+      <input id="hsearch" placeholder="Search name, IP, group, tag..." oninput="filterHosts()" style="background:transparent;border:none;outline:none;padding:8px 0;color:var(--tx);font-size:12px;flex:1;"/>
+    </div>
+    <select id="gf" onchange="filterHosts()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:7px 10px;color:var(--tx);font-size:11px;outline:none;cursor:pointer;">
+      <option value="">All Groups</option>
+    </select>
+    <select id="sf" onchange="filterHosts()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:7px;padding:7px 10px;color:var(--tx);font-size:11px;outline:none;cursor:pointer;">
+      <option value="">All Status</option><option value="online">Online</option><option value="offline">Offline</option>
+    </select>
+  </div>
+  <div class="hgrid" id="hosts-grid"></div>
+</div>
+
+<!-- ── DETAIL ── -->
+<div class="page" id="page-detail" style="padding:0;gap:0;">
+  <div class="dhead">
+    <button class="bkbtn" onclick="nav('hosts')">← Back</button>
+    <div class="hcs unknown" id="d-dot" style="width:12px;height:12px;flex-shrink:0;"></div>
+    <div style="flex:1;min-width:0;">
+      <div class="dname" id="d-name">Host</div>
+      <div class="dip" id="d-ip">—</div>
+    </div>
+    <div class="dst unknown" id="d-badge">Unknown</div>
+    <div id="d-maint" style="display:none;background:var(--Y);color:#000;font-size:9px;padding:2px 8px;border-radius:4px;font-weight:700;">🔧 MAINTENANCE</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+      <button class="tbtn" onclick="pingNow()">📡 Ping Now</button>
+      <button class="tbtn" onclick="doTrace()">🔀 Traceroute</button>
+      <button class="tbtn adm" onclick="editCurrent()">✏ Edit</button>
+      <button class="tbtn red adm" onclick="delCurrent()">🗑 Remove</button>
+    </div>
+  </div>
+  <div class="dbody">
+    <!-- Metric boxes -->
+    <div class="mrow" id="d-metrics"></div>
+
+    <!-- ═══ PRTG-style Sensor Graph ═══ -->
+    <div class="card" id="sensor-graph-card" style="padding:0;overflow:hidden;flex-shrink:0;">
+      <!-- Title bar -->
+      <div style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" id="sg-chk" checked style="margin:0;cursor:pointer;" onchange="toggleSensorGraph(this)">
+          <span style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--tx2);text-transform:uppercase;">Latency &amp; Packet Loss</span>
+        </div>
+        <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+          <!-- LIVE button -->
+          <button id="btn-live" class="cbt live-btn act-live" onclick="setLiveMode(true)" title="Stream live data in real-time">
+            <span class="ldot" style="width:7px;height:7px;margin-right:4px;"></span>LIVE
+          </button>
+          <!-- Time range buttons -->
+          <div class="cbts" style="margin:0;" id="dh-btns">
+            <button class="cbt" onclick="setDH(1,this)">1H</button>
+            <button class="cbt" onclick="setDH(3,this)">3H</button>
+            <button class="cbt" onclick="setDH(6,this)">6H</button>
+            <button class="cbt" onclick="setDH(12,this)">12H</button>
+            <button class="cbt" onclick="setDH(24,this)">24H</button>
+            <button class="cbt" onclick="setDH(48,this)">2D</button>
+            <button class="cbt" onclick="setDH(168,this)">7D</button>
+            <button class="cbt" onclick="setDH(720,this)">30D</button>
+            <button class="cbt" onclick="setDH(2160,this)">90D</button>
+          </div>
+          <!-- Custom From/To range (PRTG-style) -->
+          <div style="position:relative;">
+            <button class="cbt" id="btn-custom-range" onclick="toggleCustomPanel()" title="Custom date/time range">📅 Custom</button>
+            <div id="custom-range-panel" style="display:none;position:absolute;top:calc(100% + 6px);right:0;z-index:50;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px;box-shadow:0 6px 20px rgba(0,0,0,0.45);width:230px;">
+              <div class="fg"><label>From</label><input id="cr-from" type="datetime-local"/></div>
+              <div class="fg" style="margin-bottom:10px;"><label>To</label><input id="cr-to" type="datetime-local"/></div>
+              <div style="display:flex;gap:6px;">
+                <button class="cbt" style="flex:1;text-align:center;" onclick="toggleCustomPanel(false)">Cancel</button>
+                <button class="cbt act" style="flex:1;text-align:center;" onclick="applyCustomRange()">Apply</button>
+              </div>
+            </div>
+          </div>
+          <span id="sg-note" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;min-width:80px;text-align:right;"></span>
+        </div>
+      </div>
+
+      <!-- Chart canvas area — PRTG has white/near-white bg with coloured fills -->
+      <div style="padding:14px 10px 4px;" id="sg-chart-area">
+        <div id="c-detail-wrap" style="position:relative;width:100%;height:300px;">
+          <canvas id="c-detail"></canvas>
+          <!-- Live "data incoming" pulse overlay -->
+          <div id="live-pulse" style="display:none;position:absolute;top:8px;right:10px;background:rgba(0,200,80,0.12);border:1px solid #00e676;border-radius:4px;padding:2px 8px;font-size:9px;font-family:'JetBrains Mono',monospace;color:#00e676;">● STREAMING</div>
+        </div>
+      </div>
+
+      <!-- Chart legend row — checkboxes to show/hide series, like PRTG -->
+      <div id="sg-legend" style="padding:6px 14px 10px;display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--tx2);border-top:1px solid var(--bd);">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="checkbox" id="lc-lat"  checked onchange="setSeriesVisible(2,this.checked)" style="margin:0;">
+          <span style="display:inline-block;width:26px;height:3px;background:#00c8ff;border-radius:2px;vertical-align:middle;"></span>
+          Latency (ms)
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="checkbox" id="lc-jit"  checked onchange="setSeriesVisible(1,this.checked)" style="margin:0;">
+          <span style="display:inline-block;width:26px;height:3px;background:#7b5cff;border-radius:2px;vertical-align:middle;"></span>
+          Jitter (ms)
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="checkbox" id="lc-loss" checked onchange="setSeriesVisible(0,this.checked)" style="margin:0;">
+          <span style="display:inline-block;width:26px;height:3px;background:#ff3250;border-radius:2px;vertical-align:middle;"></span>
+          Packet Loss (%)
+        </label>
+        <span id="sg-stats" style="margin-left:auto;font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;align-self:center;"></span>
+      </div>
+    </div>
+
+    <!-- ═══ PRTG-style Sensor Data table ═══ -->
+    <div class="card" style="padding:0;overflow:hidden;flex-shrink:0;">
+      <div style="background:rgba(255,255,255,0.03);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--tx2);text-transform:uppercase;">Sensor Data</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="sd-count" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;"></span>
+          <button class="btn" onclick="exportSensorCSV()" style="padding:3px 10px;font-size:10px;">⬇ CSV</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto;max-height:360px;overflow-y:auto;">
+        <table class="tbl" id="sd-table" style="font-size:11px;min-width:700px;">
+          <thead style="position:sticky;top:0;z-index:3;">
+            <tr>
+              <th style="text-align:left;white-space:nowrap;min-width:170px;">Date Time ▲</th>
+              <th style="text-align:right;">Latency avg</th>
+              <th style="text-align:right;">Latency min</th>
+              <th style="text-align:right;">Latency max</th>
+              <th style="text-align:right;">Jitter</th>
+              <th style="text-align:right;">Pkt Loss</th>
+              <th style="text-align:right;">TTL</th>
+              <th style="text-align:center;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="sd-tbody">
+            <tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:18px;">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Uptime Timeline + Jitter chart side by side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="card">
+        <div class="ct" style="justify-content:space-between;">
+          <span>〰 Jitter Over Time</span>
+          <span id="jitter-stats" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;"></span>
+        </div>
+        <div id="c-jitter-wrap" class="cw-sm"><canvas id="c-jitter"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="ct">⏱ 24h Uptime Timeline</div>
+        <div style="font-size:9px;color:var(--tx3);margin-bottom:6px;">Each block = 30 min &nbsp;·&nbsp; <span style="color:var(--G)">■</span> Online &nbsp;<span style="color:var(--R)">■</span> Offline &nbsp;<span style="color:var(--bd)">■</span> No data</div>
+        <div class="ubar" id="ubar"></div>
+        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--tx3);margin-top:3px;"><span>24h ago</span><span>Now</span></div>
+        <div id="ust" style="margin-top:10px;font-size:11px;color:var(--tx2);line-height:1.8;"></div>
+      </div>
+    </div>
+
+    <!-- Traceroute -->
+    <div class="card">
+      <div class="ct" style="justify-content:space-between;">
+        <span>🔀 Traceroute</span>
+        <button class="btn btnA" onclick="doTrace()" style="padding:4px 12px;font-size:10px;">▶ Run Traceroute</button>
+      </div>
+      <div class="trbox" id="trbox">Click "Run Traceroute" to trace the path to this host.</div>
+    </div>
+    <!-- Host alerts -->
+    <div class="card">
+      <div class="ct">🔔 Recent Alerts for This Host</div>
+      <div id="host-alrs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ALERTS ── -->
+<div class="page" id="page-alerts">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔔 Alert Center</div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn btnS" onclick="loadAlerts()" style="padding:6px 11px;font-size:11px;">🔄 Refresh</button>
+      <button class="btn btnA" onclick="ackAll()" style="padding:6px 11px;font-size:11px;">✓ Acknowledge All</button>
+      <button class="btn" onclick="deleteAcked()" style="padding:6px 11px;font-size:11px;background:rgba(217,119,6,0.12);border-color:#d97706;color:#d97706;">🗑 Delete Acknowledged</button>
+      <button class="btn" onclick="deleteAllAlerts()" style="padding:6px 11px;font-size:11px;background:rgba(220,38,38,0.12);border-color:#dc2626;color:#dc2626;">🗑 Delete All</button>
+    </div>
+  </div>
+  <div id="alert-stats-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Time</th><th>Host</th><th>IP</th><th>Severity</th><th>Message</th><th>Ack'd By</th><th>Action</th><th></th></tr></thead>
+      <tbody id="alr-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── ALERT RULES ── -->
+<div class="page" id="page-rules">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">📏 Alert Rules</div>
+    <button class="btn btnA adm" onclick="openM('mRule')" style="padding:6px 11px;font-size:11px;">＋ Add Rule</button>
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Name</th><th>Host</th><th>Condition</th><th>Threshold</th><th>Cooldown</th><th>Email</th><th>Triggered</th><th>Enabled</th><th>Action</th></tr></thead>
+      <tbody id="rules-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── REPORT ── -->
+<div class="page" id="page-report">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">📊 NOC Uptime Report</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <div class="cbts" style="margin:0;">
+        <button class="cbt act" id="rep-7d"  onclick="setRepRange(7,this)">7D Weekly</button>
+        <button class="cbt"     id="rep-30d" onclick="setRepRange(30,this)">30D Monthly</button>
+      </div>
+      <button class="btn btnS" onclick="loadReport()" style="padding:6px 11px;font-size:11px;">🔄 Refresh</button>
+      <button class="btn" onclick="forceRefreshReport()" style="padding:6px 11px;font-size:11px;background:rgba(0,200,255,0.1);border-color:var(--acc);color:var(--acc);" title="Rebuild report cache immediately">⚡ Force Rebuild</button>
+      <button class="btn" onclick="openPdfReport('weekly')" style="padding:6px 11px;font-size:11px;background:rgba(0,200,80,0.12);border-color:#00e676;color:#00e676;">🖨 Weekly PDF</button>
+      <button class="btn" onclick="openPdfReport('monthly')" style="padding:6px 11px;font-size:11px;background:rgba(56,189,248,0.12);border-color:#38bdf8;color:#38bdf8;">🖨 Monthly PDF</button>
+      <button class="btn btnA" onclick="exportReportCSV()" style="padding:6px 11px;font-size:11px;">⬇ Export CSV</button>
+    </div>
+  </div>
+
+  <!-- KPI summary row -->
+  <div id="rep-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;"></div>
+
+  <!-- Hosts table -->
+  <div class="card" style="padding:0;overflow:hidden;flex-shrink:0;">
+    <div style="background:var(--bg3);border-bottom:1px solid var(--bd);padding:7px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--tx2);text-transform:uppercase;">Host Uptime Summary</span>
+      <span id="rep-period" style="font-size:9px;color:var(--tx3);font-family:'JetBrains Mono',monospace;"></span>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl" style="font-size:11px;min-width:800px;">
+        <thead>
+          <tr>
+            <th>Host</th><th>IP</th><th>Group</th><th>Status</th>
+            <th style="text-align:right;">Uptime 24h</th>
+            <th style="text-align:right;">Uptime 7d</th>
+            <th style="text-align:right;">Uptime 30d</th>
+            <th style="text-align:right;">Avg Lat</th>
+            <th style="text-align:right;">Max Lat</th>
+            <th style="text-align:right;">Pkt Loss</th>
+            <th style="text-align:right;">Incidents</th>
+            <th style="text-align:right;">Downtime</th>
+          </tr>
+        </thead>
+        <tbody id="rep-body"><tr><td colspan="12" style="text-align:center;padding:20px;color:var(--tx3);">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SLA compliance section -->
+  <div class="card" style="padding:0;overflow:hidden;flex-shrink:0;">
+    <div style="background:var(--bg3);border-bottom:1px solid var(--bd);padding:7px 14px;">
+      <span style="font-family:'Orbitron',monospace;font-size:10px;font-weight:700;letter-spacing:1px;color:var(--tx2);text-transform:uppercase;">SLA Compliance</span>
+    </div>
+    <div style="padding:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;" id="rep-sla"></div>
+  </div>
+
+  <!-- Note about PDF reports -->
+  <div class="card" style="padding:10px 14px;border-left:3px solid var(--acc);font-size:11px;color:var(--tx2);">
+    <strong style="color:var(--acc);">🖨 Weekly / Monthly PDF Report</strong> — Click <em>"Weekly PDF"</em> or <em>"Monthly PDF"</em> above to open a print-ready HTML report in a new tab.
+    Use your browser's <kbd style="background:var(--bg3);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;">Ctrl+P</kbd> or <kbd style="background:var(--bg3);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;">File → Print → Save as PDF</kbd> to download it.
+  </div>
+</div>
+
+<!-- ── MAINTENANCE ── -->
+<div class="page" id="page-maint">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔧 Maintenance Windows</div>
+    <button class="btn btnA adm" onclick="openM('mMaint')" style="padding:6px 11px;font-size:11px;">＋ Schedule</button>
+  </div>
+  <div class="card" style="font-size:11px;color:var(--tx2);padding:10px 14px;border-left:3px solid var(--Y);">
+    During maintenance windows, alerts are suppressed for the selected host. Ping data continues to be collected.
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Name</th><th>Host</th><th>Start</th><th>End</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="maint-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── USERS ── -->
+<div class="page" id="page-users">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">👥 User Management</div>
+    <button class="btn btnA" onclick="openM('mUser')" style="padding:6px 11px;font-size:11px;">＋ Create User</button>
+  </div>
+  <div class="card" style="font-size:11px;color:var(--tx2);padding:10px 14px;border-left:3px solid var(--acc);">
+    <strong style="color:var(--acc);">Admin</strong> — Full access: add/edit/delete hosts, manage users, change settings.<br/>
+    <strong style="color:var(--tx2);">Read-Only</strong> — Can view dashboard, hosts, alerts, and reports. Cannot modify anything.
+  </div>
+  <div class="card" style="overflow-x:auto;">
+    <table class="tbl">
+      <thead><tr><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Created</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="users-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── IMPORT / EXPORT ── -->
+<div class="page" id="page-transfer">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">📦 Import / Export Hosts</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card">
+      <div class="ct">↓ Export Hosts</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.8;">Export all monitored hosts to a file. Use this to transfer hosts to another computer running AbayoNet, or as a backup.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btnA" onclick="exportHosts('json')" style="width:100%;">↓ Export as JSON (for re-import)</button>
+        <button class="btn btnS" onclick="exportHosts('csv')" style="width:100%;">↓ Export as CSV (for spreadsheets)</button>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--tx3);">JSON export preserves all host settings and can be imported directly into another AbayoNet instance. CSV is view-only.</div>
+    </div>
+    <div class="card">
+      <div class="ct">↑ Import Hosts</div>
+      <p style="font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.8;">Import hosts from a JSON export. Existing hosts (same IP) are skipped. New hosts start monitoring immediately.</p>
+      <div class="import-zone" id="import-zone" onclick="document.getElementById('import-file').click()" ondrop="handleDrop(event)" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')">
+        <div style="font-size:36px;margin-bottom:8px;">📂</div>
+        <div style="font-size:12px;color:var(--tx2);">Click to select or drag & drop JSON file</div>
+        <div style="font-size:10px;color:var(--tx3);margin-top:4px;">Only AbayoNet JSON export files supported</div>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImportFile(event)"/>
+      <div id="import-result" style="display:none;margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;line-height:1.8;"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct">📋 How to Transfer Hosts to Another Laptop</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:2.3;">
+      <div><strong style="color:var(--acc);">Step 1</strong> — On this computer: click <strong>"Export as JSON"</strong> above and save the file</div>
+      <div><strong style="color:var(--acc);">Step 2</strong> — Copy the JSON file to the other laptop (USB, email, shared folder, etc.)</div>
+      <div><strong style="color:var(--acc);">Step 3</strong> — On the other laptop: install AbayoNet and start it (double-click START_ABAYONET.bat)</div>
+      <div><strong style="color:var(--acc);">Step 4</strong> — Log in as admin → go to <strong>Import / Export</strong> → click <strong>"Import"</strong> → select the JSON file</div>
+      <div><strong style="color:var(--acc);">Step 5</strong> — All hosts are imported and monitoring begins immediately ✅</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS ── -->
+<div class="page" id="page-settings">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">⚙ Settings</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div class="card">
+      <div class="ct">🎨 Colour Theme</div>
+      <div class="tsws">
+        <div class="tsw act" style="background:linear-gradient(135deg,#060b14,#00c8ff)" onclick="setTheme('','Dark')" title="Dark"></div>
+        <div class="tsw" style="background:linear-gradient(135deg,#f0f5fb,#0057c8)" onclick="setTheme('t-light','Light')" title="Light"></div>
+        <div class="tsw" style="background:linear-gradient(135deg,#000900,#00ff41)" onclick="setTheme('t-matrix','Matrix')" title="Matrix"></div>
+        <div class="tsw" style="background:linear-gradient(135deg,#0d1117,#58a6ff)" onclick="setTheme('t-slate','Slate')" title="Slate"></div>
+      </div>
+      <div style="margin-top:16px;" class="ct">🔑 Change My Password</div>
+      <div class="fg"><label>Current Password</label><input type="password" id="cp-old" placeholder="Current password"/></div>
+      <div class="fg"><label>New Password (min 6 chars)</label><input type="password" id="cp-new" placeholder="New password"/></div>
+      <div class="fg"><label>Confirm New Password</label><input type="password" id="cp-confirm" placeholder="Confirm new password"/></div>
+      <button class="btn btnA" onclick="changePassword()" style="width:100%;margin-top:4px;">Change Password</button>
+    </div>
+    <div class="card adm">
+      <div class="ct">📧 Email Alerts (SMTP)</div>
+      <div class="fg"><label>SMTP Host</label><input id="s-sh" placeholder="smtp.gmail.com"/></div>
+      <div class="fg"><label>SMTP Port</label><input id="s-sp" type="number" placeholder="587"/></div>
+      <div class="fg"><label>Username / Email</label><input id="s-su" placeholder="you@gmail.com"/></div>
+      <div class="fg"><label>Password / App Password</label><input id="s-sw" type="password" placeholder="••••••••"/></div>
+      <button class="btn btnA" onclick="saveSettings()" style="width:100%;">Save Email Settings</button>
+    </div>
+    <div class="card adm">
+      <div class="ct">🗂 Data &amp; Monitoring</div>
+      <div class="fg"><label>Keep data for (days) <span style="font-size:9px;color:var(--tx3);">— older pings auto-deleted hourly + DB vacuumed</span></label><input id="s-dr" type="number" placeholder="30" min="7" max="365"/></div>
+      <div class="fg"><label>Alert cooldown (seconds)</label><input id="s-ac" type="number" placeholder="300"/></div>
+      <div class="fg"><label>Dashboard auto-refresh (seconds)</label><input id="s-ri" type="number" placeholder="10"/></div>
+      <div class="fg"><label>Company Name (shown in emails)</label><input id="s-cn" placeholder="My Company"/></div>
+      <button class="btn btnA" onclick="saveSettings()" style="width:100%;">Save Settings</button>
+    </div>
+    <div class="card">
+      <div class="ct">ℹ About AbayoNet</div>
+      <div style="font-size:11px;color:var(--tx2);line-height:2.4;">
+        <div>Version: <strong style="color:var(--acc);">4.0.0 Enterprise</strong></div>
+        <div>Engine: <strong>Python 3 · SQLite WAL mode</strong></div>
+        <div>DB Lock Fix: <strong style="color:var(--G);">✓ Per-thread connection pool</strong></div>
+        <div>Authentication: <strong>Session tokens · 30-day sliding expiry</strong></div>
+        <div>Roles: <strong>Admin · Read-Only</strong></div>
+        <div>Database: <strong>data/abayonet.db</strong></div>
+        <div>Logs: <strong>data/abayonet.log</strong></div>
+        <div style="margin-top:6px;color:var(--tx3);font-size:10px;">100% local · No cloud · No subscription</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── HISTORY ANALYSIS ── -->
+<div class="page" id="page-analysis">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔬 History Analysis</div>
+  <div class="card">
+    <div class="ct">Select Hosts &amp; Time Range</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div class="fg" style="flex:1;min-width:200px;">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;">Hosts (pick 1 or more)</label>
+        <select id="an-hosts" multiple size="4" style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:6px;width:100%;font-size:12px;"></select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;">Time Range</label>
+        <select id="an-hours" style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;color:var(--tx);padding:7px 12px;font-size:12px;">
+          <option value="1">Last 1 Hour</option>
+          <option value="3">Last 3 Hours</option>
+          <option value="6">Last 6 Hours</option>
+          <option value="12">Last 12 Hours</option>
+          <option value="24" selected>Last 24 Hours</option>
+          <option value="48">Last 48 Hours</option>
+          <option value="72">Last 3 Days</option>
+          <option value="168">Last 7 Days</option>
+        </select>
+        <button class="btn btnA" onclick="runAnalysis()">▶ Run Analysis</button>
+        <button class="btn" onclick="exportAnalysisCSV()" id="an-export-btn" style="display:none;">⬇ Export CSV</button>
+      </div>
+    </div>
+  </div>
+  <div id="an-results" style="display:flex;flex-direction:column;gap:12px;"></div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /wrap -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Add Host -->
+<div class="mbg" id="mAdd">
+  <div class="modal">
+    <div class="mt">🖥 Add New Host</div>
+    <div class="fgrid">
+      <div class="fg"><label>IP Address *</label><input id="h-ip" placeholder="192.168.1.1"/></div>
+      <div class="fg"><label>Display Name</label><input id="h-nm" placeholder="My Router"/></div>
+      <div class="fg"><label>Group</label><input id="h-gp" value="Default" placeholder="Default"/></div>
+      <div class="fg"><label>Location</label><input id="h-loc" placeholder="Server Room A"/></div>
+      <div class="fg"><label>Tags (comma separated)</label><input id="h-tg" placeholder="router,wan"/></div>
+      <div class="fg"><label>Alert Email</label><input id="h-em" type="email" placeholder="alerts@company.com"/></div>
+      <div class="fg"><label>Ping Interval (sec, min 10)</label><input id="h-iv" type="number" value="30" min="10"/></div>
+      <div class="fg"><label>Packet Count (1–20)</label><input id="h-pc" type="number" value="4" min="1" max="20"/></div>
+      <div class="fg"><label>Timeout (ms)</label><input id="h-to" type="number" value="1000" min="200"/></div>
+      <div class="fg"><label>Port Checks (e.g. 80,443,22)</label><input id="h-pt" placeholder="80,443"/></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notes</label><input id="h-nt" placeholder="Optional description or notes"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mAdd')">Cancel</button>
+      <button class="btn btnA" onclick="addHost()">✅ Add &amp; Start Monitoring</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Host -->
+<div class="mbg" id="mEdit">
+  <div class="modal">
+    <div class="mt">✏ Edit Host</div>
+    <input type="hidden" id="eh-id"/>
+    <div class="fgrid">
+      <div class="fg"><label>IP Address</label><input id="eh-ip" readonly style="opacity:.5;cursor:not-allowed;"/></div>
+      <div class="fg"><label>Display Name</label><input id="eh-nm"/></div>
+      <div class="fg"><label>Group</label><input id="eh-gp"/></div>
+      <div class="fg"><label>Location</label><input id="eh-loc"/></div>
+      <div class="fg"><label>Tags</label><input id="eh-tg"/></div>
+      <div class="fg"><label>Alert Email</label><input id="eh-em" type="email"/></div>
+      <div class="fg"><label>Ping Interval (sec)</label><input id="eh-iv" type="number" min="10"/></div>
+      <div class="fg"><label>Packet Count</label><input id="eh-pc" type="number" min="1" max="20"/></div>
+      <div class="fg"><label>Timeout (ms)</label><input id="eh-to" type="number"/></div>
+      <div class="fg"><label>Port Checks</label><input id="eh-pt" placeholder="80,443,22"/></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notes</label><input id="eh-nt"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mEdit')">Cancel</button>
+      <button class="btn btnA" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alert Rule -->
+<div class="mbg" id="mRule">
+  <div class="modal">
+    <div class="mt">📏 New Alert Rule</div>
+    <div class="fg"><label>Rule Name</label><input id="r-nm" placeholder="High Latency Alert"/></div>
+    <div class="fgrid">
+      <div class="fg"><label>Apply to Host (blank = all hosts)</label>
+        <select id="r-hs"><option value="0">— All Hosts —</option></select>
+      </div>
+      <div class="fg"><label>Condition</label>
+        <select id="r-cn">
+          <option value="offline">Host goes offline</option>
+          <option value="online">Host comes back online</option>
+          <option value="latency_gt">Latency &gt; threshold (ms)</option>
+          <option value="loss_gt">Packet loss &gt; threshold (%)</option>
+          <option value="jitter_gt">Jitter &gt; threshold (ms)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Threshold (ms or %)</label><input id="r-th" type="number" placeholder="200"/></div>
+      <div class="fg"><label>Cooldown (minutes)</label><input id="r-cd" type="number" value="5" min="1"/></div>
+      <div class="fg" style="grid-column:1/-1"><label>Notify Email (optional)</label><input id="r-em" type="email" placeholder="ops@company.com"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mRule')">Cancel</button>
+      <button class="btn btnA" onclick="addRule()">Create Rule</button>
+    </div>
+  </div>
+</div>
+
+<!-- Network Scan -->
+<div class="mbg" id="mScan">
+  <div class="modal" style="max-width:580px;">
+    <div class="mt">🔭 Network Discovery Scan</div>
+    <div class="fg"><label>Subnet (CIDR notation)</label>
+      <div style="display:flex;gap:7px;">
+        <input id="scan-sub" placeholder="192.168.1.0/24"/>
+        <button class="btn btnA" onclick="doScan()" style="white-space:nowrap;padding:8px 12px;font-size:11px;">▶ Scan</button>
+      </div>
+    </div>
+    <div id="scan-st" style="font-size:11px;color:var(--tx2);margin-bottom:8px;min-height:16px;"></div>
+    <div class="scangrid" id="scan-res"></div>
+    <div class="mf"><button class="btn btnS" onclick="closeM('mScan')">Close</button></div>
+  </div>
+</div>
+
+<!-- Maintenance -->
+<div class="mbg" id="mMaint">
+  <div class="modal">
+    <div class="mt">🔧 Schedule Maintenance Window</div>
+    <div class="fg"><label>Window Name</label><input id="m-nm" placeholder="Monthly Server Patching"/></div>
+    <div class="fg"><label>Host (blank = all hosts)</label>
+      <select id="m-hs"><option value="">— All Hosts —</option></select>
+    </div>
+    <div class="fgrid">
+      <div class="fg"><label>Start Time</label><input id="m-st" type="datetime-local"/></div>
+      <div class="fg"><label>End Time</label><input id="m-et" type="datetime-local"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mMaint')">Cancel</button>
+      <button class="btn btnA" onclick="addMaint()">Schedule Window</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create User -->
+<div class="mbg" id="mUser">
+  <div class="modal">
+    <div class="mt">👤 Create New User</div>
+    <div class="fgrid">
+      <div class="fg"><label>Username *</label><input id="u-nm" placeholder="johndoe" autocomplete="off"/></div>
+      <div class="fg"><label>Password * (min 6 chars)</label><input id="u-pw" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
+      <div class="fg"><label>Full Name</label><input id="u-fn" placeholder="John Doe"/></div>
+      <div class="fg"><label>Email</label><input id="u-em" type="email" placeholder="john@company.com"/></div>
+      <div class="fg" style="grid-column:1/-1">
+        <label>Role</label>
+        <select id="u-role">
+          <option value="readonly">Read-Only — view everything, cannot modify</option>
+          <option value="admin">Admin — full access including user management</option>
+        </select>
+      </div>
+    </div>
+    <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px;font-size:11px;color:var(--tx2);margin-top:4px;line-height:1.8;">
+      💡 <strong style="color:var(--Y);">Read-Only</strong> users can view all data but cannot add, edit, or delete anything.<br/>
+      💡 <strong style="color:var(--acc);">Admin</strong> users have full control including creating other users and changing settings.
+    </div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mUser')">Cancel</button>
+      <button class="btn btnA" onclick="createUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password -->
+<div class="mbg" id="mResetPw">
+  <div class="modal">
+    <div class="mt">🔑 Reset User Password</div>
+    <input type="hidden" id="rp-uid"/>
+    <div class="fg"><label>User</label><input id="rp-un" readonly style="opacity:.6;cursor:not-allowed;"/></div>
+    <div class="fg"><label>New Password (min 6 chars)</label><input id="rp-pw" type="password" placeholder="New password" autocomplete="new-password"/></div>
+    <div style="font-size:11px;color:var(--Y);margin-bottom:10px;">⚠ This will immediately log out all active sessions for this user.</div>
+    <div class="mf">
+      <button class="btn btnS" onclick="closeM('mResetPw')">Cancel</button>
+      <button class="btn btnD" onclick="doResetPw()">Reset Password</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════
+   ABAYONET v4 — Complete Frontend Engine
+   All charts verified working
+════════════════════════════════════════════ */
+const API = window.location.origin;
+
+/* ── State ── */
+let hosts    = [];
+let curId    = null;
+let dH       = 1;       // detail hours — only used when not in live mode
+let customRange = null; // {from,to} datetime-local strings — set when a custom range is applied, overrides dH
+let liveMode = true;    // start in LIVE mode by default
+let liveLastTs = null;  // last timestamp received in live mode
+let liveTimer  = null;  // setInterval handle for live polling
+let rSec     = 10;      // refresh interval seconds
+let tickN    = 0;
+let _sensorData = [];   // cached data for CSV export
+let SESSION  = null;    // {token, username, role}
+let sbCol    = false;
+let allHosts = [];
+
+/* ── Chart instances — kept at module level so we can destroy properly ── */
+const charts = {
+  dash:   null,
+  detail: null,
+  jitter: null
+};
+
+/* helpers */
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* ── API ── */
+let _apiErrCount = 0;
+async function api(method, path, body) {
+  const hdrs = {'Content-Type':'application/json'};
+  if (SESSION?.token) hdrs['Authorization'] = 'Bearer ' + SESSION.token;
+  try {
+    const r = await fetch(API + path, {
+      method,
+      headers: hdrs,
+      body: body ? JSON.stringify(body) : undefined
+    });
+    // Only log out if the server explicitly says to (not on network glitch or 5xx)
+    if (r.status === 401) {
+      const data = await r.json().catch(() => ({}));
+      if (data?.login_required) { showLogin(); return null; }
+      return null;
+    }
+    const data = await r.json().catch(() => null);
+    if (!r.ok) {
+      // Backend returned an error payload (e.g. {error: "..."}) instead of real data.
+      // Don't let it masquerade as an empty array/result — log it and fail loudly.
+      console.error(`API ${method} ${path} -> ${r.status}:`, data?.error || r.statusText);
+      _apiErrCount++;
+      return null;
+    }
+    _apiErrCount = 0; // reset on success
+    return data;
+  } catch(e) {
+    _apiErrCount++;
+    if (_apiErrCount <= 3 || _apiErrCount % 10 === 0)
+      toast('⚠ Cannot reach server — retrying…', 'er');
+    return null;
+  }
+}
+const G = p        => api('GET',    p);
+const P = (p, b)   => api('POST',   p, b);
+const D = p        => api('DELETE', p);
+
+/* ═══════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════ */
+window.onload = async () => {
+  startClock();
+  loadTheme();
+  // Check existing token
+  const saved = localStorage.getItem('abn_token');
+  if (saved) {
+    SESSION = { token: saved };
+    const r = await G('/api/auth/check');
+    if (r?.authenticated) {
+      SESSION = { token: saved, username: r.username, role: r.role };
+      showApp();
+    } else {
+      SESSION = null;
+      localStorage.removeItem('abn_token');
+      showLogin();
+    }
+  } else {
+    showLogin();
+  }
+  $('l-pass').addEventListener('keydown', e => { if (e.key==='Enter') doLogin(); });
+  $('l-user').addEventListener('keydown', e => { if (e.key==='Enter') $('l-pass').focus(); });
+};
+
+function showLogin() {
+  $('login-page').classList.add('show');
+  $('topbar').style.display = 'none';
+  $('wrap').style.display   = 'none';
+  setTimeout(() => $('l-user').focus(), 150);
+}
+
+function showApp() {
+  $('login-page').classList.remove('show');
+  $('topbar').style.display = 'flex';
+  $('wrap').style.display   = 'flex';
+  const isAdmin = SESSION?.role === 'admin';
+  document.querySelectorAll('.adm').forEach(el => {
+    el.style.display = isAdmin ? '' : 'none';
+  });
+  $('uc-name').textContent = SESSION?.username || '';
+  $('uc-role').innerHTML = `<span class="rbadge ${SESSION?.role}">${SESSION?.role}</span>`;
+  initApp();
+}
+
+async function doLogin() {
+  const u = $('l-user').value.trim();
+  const p = $('l-pass').value;
+  $('l-err').textContent = '';
+  if (!u || !p) { $('l-err').textContent = 'Enter username and password'; return; }
+  const r = await fetch(API + '/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({username: u, password: p})
+  });
+  const data = await r.json();
+  if (data.success) {
+    SESSION = {token: data.token, username: data.username, role: data.role, full_name: data.full_name};
+    localStorage.setItem('abn_token', data.token);
+    showApp();
+  } else {
+    $('l-err').textContent = data.error || 'Login failed';
+    $('l-pass').value = '';
+    $('l-pass').focus();
+  }
+}
+
+async function doLogout() {
+  await P('/api/auth/logout', {});
+  SESSION = null;
+  localStorage.removeItem('abn_token');
+  showLogin();
+  $('l-user').value = ''; $('l-pass').value = ''; $('l-err').textContent = '';
+}
+
+/* ═══════════════════════════════════════════
+   INIT & REFRESH LOOP
+═══════════════════════════════════════════ */
+function initApp() {
+  loadDash();
+  loadSbHosts();
+  loadAlertCount();
+  // Session heartbeat — renews session every 10 min so active NOC sessions never expire
+  setInterval(async () => { await G('/api/auth/renew'); }, 10 * 60 * 1000);
+  // Refresh loop — runs every second
+  setInterval(async () => {
+    tickN++;
+    if (tickN % rSec === 0) {
+      await loadSbHosts();
+      await loadAlertCount();
+      const pg = document.querySelector('.page.act');
+      if (!pg) return;
+      if (pg.id === 'page-dash') await loadDash();
+      // On detail page: live mode handles its own polling via liveTimer
+      // Only refresh metrics/uptime bar; never touch chart or restart live timer here
+      if (pg.id === 'page-detail' && curId) {
+        const stats = await G(`/api/host/${curId}/stats?hours=24`);
+        if (stats) renderMetrics(stats);
+        updateDetailHeader(curId);
+      }
+    }
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════ */
+function nav(name) {
+  // Stop live streaming when leaving detail page
+  if (name !== 'detail') stopLiveTimer();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('act'));
+  document.querySelectorAll('.sbi').forEach(s => s.classList.remove('act'));
+  $('page-' + name)?.classList.add('act');
+  $('nav-'  + name)?.classList.add('act');
+  const loaders = {
+    hosts:    loadHosts,
+    alerts:   loadAlerts,
+    rules:    loadRules,
+    report:   loadReport,
+    maint:    loadMaint,
+    settings: loadSettings,
+    dash:     loadDash,
+    users:    loadUsers,
+    analysis: loadAnalysis
+  };
+  loaders[name]?.();
+}
+
+/* ═══════════════════════════════════════════
+   CHART HELPERS — correct destroy/create
+═══════════════════════════════════════════ */
+function destroyChart(key) {
+  if (charts[key]) {
+    charts[key].destroy();
+    charts[key] = null;
+  }
+}
+
+/* Build Chart.js default options themed to AbayoNet */
+function chartOpts(yLabel, extra) {
+  const base = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 350 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        labels: {
+          color: '#6888aa',
+          font: { family: "'JetBrains Mono', monospace", size: 10 },
+          boxWidth: 12
+        }
+      },
+      tooltip: {
+        backgroundColor: '#0c1525',
+        borderColor: '#172035',
+        borderWidth: 1,
+        titleColor: '#deeeff',
+        bodyColor: '#6888aa',
+        padding: 10
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#17203520' },
+        ticks: {
+          color: '#6888aa',
+          font: { family: "'JetBrains Mono', monospace", size: 9 },
+          maxTicksLimit: 10,
+          maxRotation: 0
+        }
+      },
+      y: {
+        grid: { color: '#17203535' },
+        ticks: {
+          color: '#6888aa',
+          font: { family: "'JetBrains Mono', monospace", size: 10 }
+        },
+        title: {
+          display: !!yLabel,
+          text: yLabel || '',
+          color: '#6888aa',
+          font: { size: 10 }
+        }
+      }
+    }
+  };
+  return extra ? mergeDeep(base, extra) : base;
+}
+
+function mergeDeep(a, b) {
+  const out = {...a};
+  for (const k of Object.keys(b)) {
+    if (b[k] && typeof b[k]==='object' && !Array.isArray(b[k]) && a[k] && typeof a[k]==='object') {
+      out[k] = mergeDeep(a[k], b[k]);
+    } else {
+      out[k] = b[k];
+    }
+  }
+  return out;
+}
+
+function makeLabels(history) {
+  return history.map(h => {
+    const d = new Date(h.timestamp);
+    return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  });
+}
+
+/* ═══════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════ */
+async function loadDash() {
+  const [d, hs] = await Promise.all([G('/api/dashboard'), G('/api/hosts')]);
+  if (!d || !hs) return;
+  hosts = hs; allHosts = hs;
+  // Top bar stats
+  $('ts-on').textContent  = d.online;
+  $('ts-off').textContent = d.offline;
+  $('ts-deg').textContent = d.degraded;
+  $('ts-lat').textContent = d.avg_latency_1h != null ? d.avg_latency_1h.toFixed(1) : '—';
+  // Stat cards
+  $('dash-stats').innerHTML = `
+    <div class="sc on"><span class="scic">🟢</span><div><div class="scn">${d.online}</div><div class="scl">Online</div></div></div>
+    <div class="sc off"><span class="scic">🔴</span><div><div class="scn">${d.offline}</div><div class="scl">Offline</div></div></div>
+    <div class="sc warn"><span class="scic">⚡</span><div><div class="scn">${d.degraded}</div><div class="scl">Degraded</div></div></div>
+    <div class="sc warn"><span class="scic">🔔</span><div><div class="scn">${d.unack_alerts}</div><div class="scl">Active Alerts</div></div></div>
+    <div class="sc inf"><span class="scic">📡</span><div><div class="scn">${d.avg_latency_1h != null ? d.avg_latency_1h.toFixed(1) : '—'}</div><div class="scl">Avg ms (1h)</div></div></div>
+    <div class="sc inf"><span class="scic">🖥</span><div><div class="scn">${d.total}</div><div class="scl">Total Hosts</div></div></div>`;
+  renderGrid('dash-hg', hs);
+  $('sb-hc').textContent = hs.length;
+  populateSelects(hs);
+  await loadDashAlerts();
+  await loadDashChart(hs);
+}
+
+function filterDash() {
+  const q = $('dsearch').value.toLowerCase();
+  renderGrid('dash-hg', hosts.filter(h =>
+    !q || (h.name||'').toLowerCase().includes(q) ||
+    h.ip.includes(q) || (h.group_name||'').toLowerCase().includes(q) ||
+    (h.tags||'').toLowerCase().includes(q)
+  ));
+}
+
+async function loadDashAlerts() {
+  const al = await G('/api/alerts?limit=12&unack=1');
+  if (!al) return;
+  $('dash-alr').innerHTML = al.length
+    ? al.map(a => `
+      <div style="display:flex;align-items:start;gap:8px;padding:7px 0;border-bottom:1px solid color-mix(in srgb,var(--bd) 50%,transparent);">
+        <span class="sev ${esc(a.severity)}">${esc(a.severity)}</span>
+        <div style="flex:1;min-width:0;font-size:11px;">
+          <div style="font-weight:500;">${esc(a.host_name||'?')} (${esc(a.ip||'')})</div>
+          <div style="color:var(--tx3);font-size:10px;margin-top:1px;">${esc(a.message)}</div>
+          <div style="color:var(--tx3);font-size:9px;">${fmtT(a.timestamp)}</div>
+        </div>
+        <button class="ackb" onclick="ackOne(${a.id})">✓</button>
+      </div>`).join('')
+    : '<div class="no-data"><div class="ni">✅</div>No active alerts</div>';
+}
+
+async function loadDashChart(hs) {
+  const ctx = $('c-dash');
+  if (!ctx) return;
+
+  if (!hs || !hs.length) {
+    destroyChart('dash');
+    $('dash-chart-note').textContent = 'No hosts configured';
+    return;
+  }
+
+  const colors = ['#00c8ff','#7b5cff','#00e676','#ff1744','#ffc107','#ff6d00'];
+
+  // Try the fast bulk endpoint first
+  let bulkData = await G('/api/dashboard/chart');
+
+  // If bulk endpoint works and has data — use it
+  if (bulkData && bulkData.length && bulkData.some(h => h.points && h.points.length)) {
+    destroyChart('dash');
+    const allTs = [...new Set(bulkData.flatMap(h => h.points.map(p => p.ts)))].sort();
+    const labels = allTs.map(ts => {
+      const d = new Date(ts);
+      return d.getHours().toString().padStart(2,'0') + ':' +
+             d.getMinutes().toString().padStart(2,'0') + ':' +
+             d.getSeconds().toString().padStart(2,'0');
+    });
+    const datasets = bulkData.filter(h => h.points && h.points.length).map((h, i) => {
+      const byTs = {};
+      h.points.forEach(p => { byTs[p.ts] = p.lat; });
+      return {
+        label: h.name || h.ip,
+        data: allTs.map(ts => byTs[ts] ?? null),
+        borderColor: colors[i % colors.length],
+        backgroundColor: colors[i % colors.length] + '18',
+        tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2, spanGaps: true
+      };
+    });
+    try {
+      charts.dash = new Chart(ctx, { type:'line', data:{labels, datasets}, options: chartOpts('Latency (ms)') });
+      $('dash-chart-note').textContent = `${datasets.length} host${datasets.length>1?'s':''} · 1h`;
+    } catch(e) { console.error('Dash chart error:', e); }
+    return;
+  }
+
+  // Fallback: pick top 3 online hosts with lowest latency, fetch their history
+  // Maximum 3 calls to keep it fast
+  const onlineHosts = hs
+    .filter(h => h.status === 'online' && h.latency != null)
+    .sort((a, b) => (a.latency||999) - (b.latency||999))
+    .slice(0, 3);
+
+  if (!onlineHosts.length) {
+    // No online hosts — try first 3 regardless of status
+    onlineHosts.push(...hs.slice(0, 3));
+  }
+
+  // Fire all 3 requests in parallel (not sequential)
+  const results = await Promise.all(
+    onlineHosts.map(h => G(`/api/host/${h.id}/history?hours=1`))
+  );
+
+  const datasets = [];
+  let labels = [];
+
+  for (let i = 0; i < onlineHosts.length; i++) {
+    const hist = results[i];
+    if (!hist || !hist.length) continue;
+    if (!labels.length) labels = makeLabels(hist);
+    datasets.push({
+      label: onlineHosts[i].name || onlineHosts[i].ip,
+      data: hist.map(h => h.latency_ms),
+      borderColor: colors[i % colors.length],
+      backgroundColor: colors[i % colors.length] + '18',
+      tension: 0.4, fill: false, pointRadius: 0, borderWidth: 2, spanGaps: true
+    });
+  }
+
+  destroyChart('dash');
+
+  if (!datasets.length) {
+    $('dash-chart-note').textContent = 'Collecting data — check back soon';
+    return;
+  }
+
+  try {
+    charts.dash = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets },
+      options: chartOpts('Latency (ms)')
+    });
+    $('dash-chart-note').textContent = `${datasets.length} host${datasets.length>1?'s':''} · 1h`;
+  } catch(e) {
+    console.error('Dash chart error:', e);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   HOST GRID
+═══════════════════════════════════════════ */
+async function loadHosts() {
+  const hs = await G('/api/hosts');
+  if (!hs) return;
+  hosts = hs; allHosts = hs;
+  renderGrid('hosts-grid', hs);
+  populateGroupFilter(hs);
+}
+
+function renderGrid(elId, hs) {
+  $(elId).innerHTML = hs.length
+    ? hs.map(h => hCard(h)).join('')
+    : '<div class="no-data" style="grid-column:1/-1"><div class="ni">🖥</div>No hosts found. Click "+ Add Host" to get started.</div>';
+}
+
+function hCard(h) {
+  const st  = h.status || 'unknown';
+  const lat = h.latency != null ? h.latency.toFixed(1) : '—';
+  const los = h.loss    != null ? h.loss.toFixed(1)    : '—';
+  const up  = h.uptime_24h != null ? h.uptime_24h.toFixed(1) : '—';
+  const latC = (h.latency||0)>200?'bad':(h.latency||0)>100?'warn':'';
+  const losC = (h.loss||0)>20?'bad':(h.loss||0)>5?'warn':'';
+  const isAdmin = SESSION?.role === 'admin';
+  return `
+<div class="hcard ${h.in_maintenance?'maintenance':st}" onclick="openDetail(${h.id})">
+  ${h.in_maintenance ? '<div class="mbadge">🔧 MAINT</div>' : ''}
+  <div class="hct">
+    <div class="hcs ${st}"></div>
+    <div class="hcn" title="${esc(h.name||h.ip)}">${esc(h.name||h.ip)}</div>
+  </div>
+  <div class="hcip">${esc(h.ip)}</div>
+  ${h.group_name ? `<div class="hcg">${esc(h.group_name)}</div>` : ''}
+  <div class="hcmg">
+    <div class="hcm"><div class="hcmv ${latC}">${lat}</div><div class="hcml">ms</div></div>
+    <div class="hcm"><div class="hcmv ${losC}">${los}%</div><div class="hcml">Loss</div></div>
+    <div class="hcm"><div class="hcmv">${up}%</div><div class="hcml">Up 24h</div></div>
+    <div class="hcm"><div class="hcmv">${h.ttl||'—'}</div><div class="hcml">TTL</div></div>
+  </div>
+  ${isAdmin ? `<div class="hcact" onclick="event.stopPropagation()">
+    <button class="hcab" onclick="openDetail(${h.id})">📊 Detail</button>
+    <button class="hcab" onclick="editById(${h.id})">✏ Edit</button>
+    <button class="hcab del" onclick="delHost(${h.id},event)">🗑</button>
+  </div>` : ''}
+</div>`;
+}
+
+function filterHosts() {
+  const q   = ($('hsearch').value||'').toLowerCase();
+  const grp = $('gf').value;
+  const st  = $('sf').value;
+  const f = allHosts.filter(h =>
+    (!q   || (h.name||'').toLowerCase().includes(q) || h.ip.includes(q) ||
+              (h.group_name||'').toLowerCase().includes(q) || (h.tags||'').toLowerCase().includes(q)) &&
+    (!grp || h.group_name === grp) &&
+    (!st  || h.status === st)
+  );
+  renderGrid('hosts-grid', f);
+}
+
+function populateGroupFilter(hs) {
+  const g = [...new Set(hs.map(h => h.group_name).filter(Boolean))];
+  const el = $('gf'); if (!el) return;
+  const cur = el.value;
+  el.innerHTML = '<option value="">All Groups</option>' + g.map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+  el.value = cur;
+}
+
+function populateSelects(hs) {
+  ['r-hs'].forEach(sid => {
+    const el = $(sid); if (!el) return;
+    el.innerHTML = '<option value="0">— All Hosts —</option>' +
+      hs.map(h => `<option value="${h.id}">${esc(h.name||h.ip)}</option>`).join('');
+  });
+  ['m-hs'].forEach(sid => {
+    const el = $(sid); if (!el) return;
+    el.innerHTML = '<option value="">— All Hosts —</option>' +
+      hs.map(h => `<option value="${h.id}">${esc(h.name||h.ip)}</option>`).join('');
+  });
+}
+
+/* ═══════════════════════════════════════════
+   HOST DETAIL + CHARTS
+═══════════════════════════════════════════ */
+async function openDetail(id) {
+  curId = id;
+  nav('detail');
+  await loadDetail(id, true);
+}
+
+/* Update just the header status dot/badge */
+async function updateDetailHeader(id) {
+  const h = await G(`/api/host/${id}`);
+  if (!h) return;
+  const st = h.status || 'unknown';
+  $('d-dot').className     = `hcs ${st}`;
+  $('d-badge').className   = `dst ${st}`;
+  $('d-badge').textContent = st.toUpperCase();
+}
+
+/* Render metric boxes from stats */
+function renderMetrics(stats) {
+  if (!stats) return;
+  const upC  = (stats.uptime_pct||0) < 99 ? ((stats.uptime_pct||0) < 95 ? 'bad' : 'warn') : 'good';
+  const latC = (stats.avg_latency||0) > 200 ? 'bad' : (stats.avg_latency||0) > 100 ? 'warn' : '';
+  $('d-metrics').innerHTML = `
+    <div class="mb"><div class="mbv ${upC}">${(stats.uptime_pct||0).toFixed(2)}%</div><div class="mbl">Uptime (24H)</div></div>
+    <div class="mb"><div class="mbv ${latC}">${stats.avg_latency?.toFixed(1)||'—'}</div><div class="mbl">Avg Latency ms</div></div>
+    <div class="mb"><div class="mbv">${stats.min_latency?.toFixed(1)||'—'}</div><div class="mbl">Min ms</div></div>
+    <div class="mb"><div class="mbv ${(stats.max_latency||0)>200?'bad':''}">${stats.max_latency?.toFixed(1)||'—'}</div><div class="mbl">Max ms</div></div>
+    <div class="mb"><div class="mbv">${stats.p95_latency?.toFixed(1)||'—'}</div><div class="mbl">P95 ms</div></div>
+    <div class="mb"><div class="mbv">${stats.p99_latency?.toFixed(1)||'—'}</div><div class="mbl">P99 ms</div></div>
+    <div class="mb"><div class="mbv ${(stats.avg_loss||0)>5?'bad':''}">${(stats.avg_loss||0).toFixed(1)}%</div><div class="mbl">Avg Pkt Loss</div></div>
+    <div class="mb"><div class="mbv">${stats.avg_jitter?.toFixed(1)||'—'}</div><div class="mbl">Avg Jitter ms</div></div>
+    <div class="mb"><div class="mbv">${stats.total_checks||0}</div><div class="mbl">Total Checks</div></div>`;
+}
+
+async function loadDetail(id, resetCharts=true) {
+  const [h, stats] = await Promise.all([
+    G(`/api/host/${id}`),
+    G(`/api/host/${id}/stats?hours=24`)
+  ]);
+  if (!h) return;
+
+  // Header
+  const st = h.status || 'unknown';
+  $('d-name').textContent    = h.name || h.ip;
+  $('d-ip').textContent      = `${h.ip} · Group: ${h.group_name||'—'} · ${h.location||''} · Interval: ${h.ping_interval}s`;
+  $('d-dot').className       = `hcs ${st}`;
+  $('d-badge').className     = `dst ${st}`;
+  $('d-badge').textContent   = st.toUpperCase();
+  $('d-maint').style.display = h.in_maintenance ? 'block' : 'none';
+
+  renderMetrics(stats);
+
+  if (resetCharts) {
+    // First load — always start in live mode
+    liveMode = true;
+    liveLastTs = null;
+    customRange = null;
+    stopLiveTimer();
+    const liveBtn = $('btn-live');
+    if (liveBtn) { liveBtn.classList.add('act-live'); liveBtn.classList.remove('inactive'); }
+    document.querySelectorAll('#dh-btns .cbt').forEach(b => b.classList.remove('act'));
+    $('btn-custom-range')?.classList.remove('act');
+    pollLive();
+    liveTimer = setInterval(pollLive, Math.max(rSec * 1000, 5000));
+  } else if (!liveMode) {
+    // Historical mode refresh — reload history chart quietly (respects customRange if set)
+    await loadDetailCharts(id, false);
+  }
+  // liveMode=true: pollLive() handles its own data, nothing to do here
+
+  // Always refresh uptime bar and alerts on full load
+  if (resetCharts) {
+    await loadUBar(id);
+    await loadHostAlerts(id);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   PRTG-STYLE SENSOR GRAPH — LIVE + HISTORY
+═══════════════════════════════════════════ */
+
+/* ── Jitter bar/area chart ── */
+function buildJitterChart(hist) {
+  if (!$('c-jitter')) {
+    $('c-jitter-wrap').innerHTML = '<canvas id="c-jitter"></canvas>';
+  }
+  destroyChart('jitter');
+
+  if (!hist || !hist.length) {
+    $('c-jitter-wrap').innerHTML = '<div class="no-data" style="height:140px;"><div class="ni">〰</div>No jitter data yet</div>';
+    if ($('jitter-stats')) $('jitter-stats').textContent = '';
+    return;
+  }
+
+  const labels  = hist.map(h => {
+    const d = new Date(h.timestamp);
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  });
+  const jitData = hist.map(h => h.jitter_ms != null ? +h.jitter_ms.toFixed(2) : 0);
+
+  const validJit = jitData.filter(v => v > 0);
+  const avgJit = validJit.length ? (validJit.reduce((a,b)=>a+b,0)/validJit.length).toFixed(1) : '0.0';
+  const maxJit = validJit.length ? Math.max(...validJit).toFixed(1) : '0.0';
+  if ($('jitter-stats')) $('jitter-stats').textContent = `avg ${avgJit} ms · max ${maxJit} ms`;
+
+  const ctx = $('c-jitter').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 150);
+  grad.addColorStop(0,   'rgba(123,92,255,0.65)');
+  grad.addColorStop(0.6, 'rgba(123,92,255,0.25)');
+  grad.addColorStop(1,   'rgba(123,92,255,0.03)');
+
+  charts.jitter = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Jitter (ms)',
+        data: jitData,
+        borderColor: '#7b5cff',
+        backgroundColor: grad,
+        fill: true,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        borderWidth: 1.8,
+        spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: liveMode ? 0 : 350 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0a1220',
+          borderColor: '#1e3050',
+          borderWidth: 1,
+          titleColor: '#deeeff',
+          bodyColor: '#8aa8cc',
+          callbacks: { label: ctx => `  Jitter: ${ctx.raw.toFixed(2)} ms` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(30,48,80,0.45)' },
+          ticks: { color:'#5577aa', font:{ family:"'JetBrains Mono',monospace", size:7 }, maxTicksLimit:8, maxRotation:0 }
+        },
+        y: {
+          grid: { color: 'rgba(30,48,80,0.45)' },
+          min: 0,
+          ticks: { color:'#7b5cff', font:{ family:"'JetBrains Mono',monospace", size:8 }, callback: v => v+' ms' },
+          title: { display:true, text:'Jitter (ms)', color:'#7b5cff', font:{ size:8 } }
+        }
+      }
+    }
+  });
+}
+
+/* ── Build the Chart.js chart on the c-detail canvas ── */
+function buildDetailChart(hist) {
+  buildJitterChart(hist);
+  if (!hist || !hist.length) {
+    destroyChart('detail');
+    $('c-detail-wrap').innerHTML =
+      '<div class="no-data"><div class="ni">📊</div>No data for this time range yet.<br/>Data will appear as pings are collected.</div>';
+    $('sg-legend').querySelectorAll('label').forEach(l => l.style.opacity = '0.4');
+    $('sg-note').textContent = '0 values';
+    $('sg-stats').textContent = '';
+    return;
+  }
+  $('sg-legend').querySelectorAll('label').forEach(l => l.style.opacity = '1');
+
+  // Ensure canvas exists (may have been replaced by noData div)
+  if (!$('c-detail')) {
+    $('c-detail-wrap').innerHTML = '<canvas id="c-detail"></canvas>';
+  }
+
+  const labels   = hist.map(h => {
+    const d = new Date(h.timestamp);
+    return (d.getMonth()+1)+'/'+(d.getDate())+' '
+      + d.getHours().toString().padStart(2,'0')+':'
+      + d.getMinutes().toString().padStart(2,'0')+':'
+      + d.getSeconds().toString().padStart(2,'0');
+  });
+  const latData  = hist.map(h => h.latency_ms  != null ? +h.latency_ms.toFixed(2)  : null);
+  const jitData  = hist.map(h => h.jitter_ms   != null ? +h.jitter_ms.toFixed(2)   : null);
+  const lossData = hist.map(h => h.packet_loss  != null ? +h.packet_loss.toFixed(2) : 0);
+
+  const validLat = latData.filter(v => v != null && v > 0);
+  const maxLat   = validLat.length ? Math.max(...validLat) : 100;
+  const minLat   = validLat.length ? Math.min(...validLat) : 0;
+  const avgLat   = validLat.length ? (validLat.reduce((a,b)=>a+b,0)/validLat.length) : 0;
+  const maxLoss  = Math.max(...lossData, 5);
+
+  // Update stats label
+  const onLn = hist.filter(h=>h.status==='online').length;
+  const upPct = hist.length ? (onLn/hist.length*100).toFixed(1) : '0.0';
+  $('sg-stats').textContent =
+    `Min: ${minLat.toFixed(1)} ms  Avg: ${avgLat.toFixed(1)} ms  Max: ${maxLat.toFixed(1)} ms  Uptime: ${upPct}%`;
+  $('sg-note').textContent = `${hist.length} values`;
+
+  destroyChart('detail');
+  const ctx = $('c-detail').getContext('2d');
+
+  // PRTG-style gradients
+  const latGrad = ctx.createLinearGradient(0, 0, 0, 300);
+  latGrad.addColorStop(0,   'rgba(0,200,255,0.55)');
+  latGrad.addColorStop(0.5, 'rgba(0,200,255,0.25)');
+  latGrad.addColorStop(1,   'rgba(0,200,255,0.05)');
+
+  const jitGrad = ctx.createLinearGradient(0, 0, 0, 300);
+  jitGrad.addColorStop(0,   'rgba(123,92,255,0.40)');
+  jitGrad.addColorStop(0.6, 'rgba(123,92,255,0.12)');
+  jitGrad.addColorStop(1,   'rgba(123,92,255,0.02)');
+
+  const lossGrad = ctx.createLinearGradient(0, 0, 0, 300);
+  lossGrad.addColorStop(0,   'rgba(255,50,80,0.80)');
+  lossGrad.addColorStop(0.4, 'rgba(255,50,80,0.45)');
+  lossGrad.addColorStop(1,   'rgba(255,50,80,0.08)');
+
+  charts.detail = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        // Loss first → background band (right axis)
+        {
+          label: 'Packet Loss (%)',
+          data: lossData,
+          borderColor: '#ff3250',
+          backgroundColor: lossGrad,
+          yAxisID: 'y1',
+          tension: 0.2,
+          fill: true,
+          pointRadius: lossData.map(v => (v||0) > 0 ? 2.5 : 0),
+          pointBackgroundColor: '#ff3250',
+          borderWidth: 2,
+          spanGaps: true,
+          order: 3
+        },
+        // Jitter behind latency (left axis)
+        {
+          label: 'Jitter (ms)',
+          data: jitData,
+          borderColor: '#7b5cff',
+          backgroundColor: jitGrad,
+          yAxisID: 'y',
+          tension: 0.35,
+          fill: true,
+          pointRadius: 0,
+          pointHoverRadius: 3,
+          borderWidth: 1.5,
+          spanGaps: true,
+          order: 2
+        },
+        // Latency on top (left axis)
+        {
+          label: 'Latency (ms)',
+          data: latData,
+          borderColor: '#00c8ff',
+          backgroundColor: latGrad,
+          yAxisID: 'y',
+          tension: 0.35,
+          fill: true,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          borderWidth: 2,
+          spanGaps: true,
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: liveMode ? 0 : 450, easing: 'easeInOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },  // we use our own HTML legend
+        tooltip: {
+          backgroundColor: '#0a1220',
+          borderColor: '#1e3050',
+          borderWidth: 1,
+          titleColor: '#deeeff',
+          bodyColor: '#8aa8cc',
+          padding: 12,
+          callbacks: {
+            title: items => items[0]?.label || '',
+            label: ctx => {
+              const v = ctx.raw;
+              if (ctx.dataset.label === 'Latency (ms)')    return `  Latency:   ${v != null ? v.toFixed(1) : '—'} ms`;
+              if (ctx.dataset.label === 'Jitter (ms)')     return `  Jitter:    ${v != null ? v.toFixed(1) : '—'} ms`;
+              if (ctx.dataset.label === 'Packet Loss (%)') return `  Pkt Loss:  ${v != null ? v.toFixed(1) : '0.0'} %`;
+              return '';
+            },
+            afterBody: items => {
+              const idx = items[0]?.dataIndex;
+              if (idx == null) return [];
+              const h = hist[idx];
+              if (!h) return [];
+              return [`  Status:    ${h.status||'—'}`, `  TTL:       ${h.ttl||'—'}`];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(30,48,80,0.55)', lineWidth: 1 },
+          border: { color: '#172035' },
+          ticks: {
+            color: '#5577aa',
+            font: { family: "'JetBrains Mono',monospace", size: 8 },
+            maxTicksLimit: liveMode ? 10 : 16,
+            maxRotation: 0, autoSkip: true
+          }
+        },
+        y: {
+          type: 'linear',
+          position: 'left',
+          grid: { color: 'rgba(30,48,80,0.5)', lineWidth: 1 },
+          border: { color: '#172035' },
+          min: 0,
+          ticks: {
+            color: '#00c8ff',
+            font: { family: "'JetBrains Mono',monospace", size: 9 },
+            callback: v => v.toFixed(0) + ' ms'
+          },
+          title: { display: true, text: 'Latency / Jitter (ms)', color: '#6888aa', font: { size: 9 } }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          border: { color: '#172035' },
+          min: 0,
+          max: Math.max(maxLoss * 1.5, 10),
+          ticks: {
+            color: '#ff3250',
+            font: { family: "'JetBrains Mono',monospace", size: 9 },
+            callback: v => v.toFixed(0) + '%'
+          },
+          title: { display: true, text: 'Loss (%)', color: '#ff3250', font: { size: 9 } }
+        }
+      }
+    }
+  });
+
+  // Restore hidden states from checkboxes
+  [2, 1, 0].forEach((dsIdx, cbIdx) => {
+    const ids = ['lc-lat','lc-jit','lc-loss'];
+    const cb = $(ids[cbIdx]);
+    if (cb && !cb.checked && charts.detail) charts.detail.data.datasets[dsIdx].hidden = true;
+  });
+  if (charts.detail) charts.detail.update('none');
+}
+
+/* ── Append new points to live chart without full redraw ── */
+function appendLivePoints(newPts) {
+  if (!newPts || !newPts.length || !charts.detail) return;
+  const ch = charts.detail;
+  const MAX_LIVE_PTS = 200; // rolling window
+
+  for (const h of newPts) {
+    const d = new Date(h.timestamp);
+    const lbl = (d.getMonth()+1)+'/'+(d.getDate())+' '
+      + d.getHours().toString().padStart(2,'0')+':'
+      + d.getMinutes().toString().padStart(2,'0')+':'
+      + d.getSeconds().toString().padStart(2,'0');
+
+    ch.data.labels.push(lbl);
+    ch.data.datasets[0].data.push(h.packet_loss != null ? +h.packet_loss.toFixed(2) : 0);
+    ch.data.datasets[1].data.push(h.jitter_ms  != null ? +h.jitter_ms.toFixed(2)  : null);
+    ch.data.datasets[2].data.push(h.latency_ms != null ? +h.latency_ms.toFixed(2) : null);
+
+    // Trim to rolling window
+    if (ch.data.labels.length > MAX_LIVE_PTS) {
+      ch.data.labels.shift();
+      ch.data.datasets.forEach(ds => ds.data.shift());
+    }
+
+    liveLastTs = h.timestamp;
+    // Prepend to sensor table
+    prependSensorRow(h);
+  }
+
+  // Update live stats
+  const allLat = ch.data.datasets[2].data.filter(v => v != null && v > 0);
+  if (allLat.length) {
+    const mn = Math.min(...allLat), mx = Math.max(...allLat);
+    const av = allLat.reduce((a,b)=>a+b,0)/allLat.length;
+    $('sg-stats').textContent = `Min: ${mn.toFixed(1)} ms  Avg: ${av.toFixed(1)} ms  Max: ${mx.toFixed(1)} ms`;
+  }
+  $('sg-note').textContent = `${ch.data.labels.length} values`;
+
+  // Also update jitter chart with new points
+  if (charts.jitter && newPts.length) {
+    const jch = charts.jitter;
+    for (const h of newPts) {
+      const d = new Date(h.timestamp);
+      const lbl = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+      jch.data.labels.push(lbl);
+      jch.data.datasets[0].data.push(h.jitter_ms != null ? +h.jitter_ms.toFixed(2) : 0);
+      if (jch.data.labels.length > 200) {
+        jch.data.labels.shift();
+        jch.data.datasets[0].data.shift();
+      }
+    }
+    // Update jitter stats label
+    const jvals = jch.data.datasets[0].data.filter(v => v > 0);
+    if (jvals.length && $('jitter-stats')) {
+      const av = (jvals.reduce((a,b)=>a+b,0)/jvals.length).toFixed(1);
+      const mx = Math.max(...jvals).toFixed(1);
+      $('jitter-stats').textContent = `avg ${av} ms · max ${mx} ms`;
+    }
+    jch.update('none');
+  }
+
+  ch.update('none'); // no animation for smooth live feel
+}
+
+/* ── Poll for new live pings ── */
+async function pollLive() {
+  if (!curId || !liveMode) return;
+  try {
+    const url = liveLastTs
+      ? `/api/host/${curId}/latest?since=${encodeURIComponent(liveLastTs)}`
+      : `/api/host/${curId}/latest?n=120`;
+    const pts = await G(url);
+    if (!pts) return;
+
+    if (!charts.detail) {
+      // First load — build chart from scratch
+      _sensorData = pts;
+      buildDetailChart(pts);
+      buildSensorTable(pts);
+      if (pts.length) liveLastTs = pts[pts.length-1].timestamp;
+    } else if (pts.length) {
+      // Append only new points
+      _sensorData = [..._sensorData, ...pts].slice(-500);
+      appendLivePoints(pts);
+    }
+
+    // Pulse indicator
+    const pulse = $('live-pulse');
+    if (pulse && pts.length) {
+      pulse.style.display = '';
+      clearTimeout(pulse._t);
+      pulse._t = setTimeout(() => { pulse.style.display = 'none'; }, 2000);
+    }
+  } catch(e) { /* silently skip, will retry */ }
+}
+
+/* ── Full chart load for historical view ── */
+async function loadDetailCharts(id, forceReset) {
+  stopLiveTimer();
+  const url = customRange
+    ? `/api/host/${id}/history?from=${encodeURIComponent(customRange.from)}&to=${encodeURIComponent(customRange.to)}`
+    : `/api/host/${id}/history?hours=${dH}`;
+  const hist = await G(url);
+  if (!hist) return;
+  _sensorData = hist;
+  buildDetailChart(hist);
+  buildSensorTable(hist);
+}
+
+/* ── Set LIVE mode on/off ── */
+function setLiveMode(on) {
+  stopLiveTimer();
+  liveMode = on;
+  const btn = $('btn-live');
+
+  if (on) {
+    // Activate LIVE button
+    btn?.classList.add('act-live');
+    btn?.classList.remove('inactive');
+    // Deactivate all time-range buttons (including custom)
+    document.querySelectorAll('#dh-btns .cbt').forEach(b => b.classList.remove('act'));
+    $('btn-custom-range')?.classList.remove('act');
+    customRange = null;
+    // Show pulse
+    liveLastTs = null;
+    if ($('live-pulse')) $('live-pulse').style.display = '';
+    // Kick off polling (matches host interval, min 5s)
+    const interval = Math.max((rSec || 10) * 1000, 5000);
+    pollLive(); // immediate first call
+    liveTimer = setInterval(pollLive, interval);
+  } else {
+    btn?.classList.remove('act-live');
+    btn?.classList.add('inactive');
+    $('live-pulse') && ($('live-pulse').style.display = 'none');
+  }
+}
+
+function stopLiveTimer() {
+  if (liveTimer) { clearInterval(liveTimer); liveTimer = null; }
+  if ($('live-pulse')) $('live-pulse').style.display = 'none';
+}
+
+/* ── Switch to a historical range ── */
+function setDH(h, btn) {
+  dH = h;
+  customRange = null;
+  liveMode = false;
+  stopLiveTimer();
+  $('btn-live')?.classList.remove('act-live');
+  $('btn-live')?.classList.add('inactive');
+  document.querySelectorAll('#dh-btns .cbt').forEach(b => b.classList.remove('act'));
+  $('btn-custom-range')?.classList.remove('act');
+  btn.classList.add('act');
+  if (curId) loadDetailCharts(curId, false);
+}
+
+/* ── Custom From/To date-time range (PRTG-style) ── */
+function toggleCustomPanel(show) {
+  const panel = $('custom-range-panel');
+  if (!panel) return;
+  const willShow = show !== undefined ? show : panel.style.display === 'none';
+  panel.style.display = willShow ? 'block' : 'none';
+  if (willShow) {
+    // Pre-fill with sensible defaults the first time: last 24h
+    const toEl = $('cr-to'), fromEl = $('cr-from');
+    if (toEl && !toEl.value) {
+      const now = new Date(); now.setSeconds(0,0);
+      const dayAgo = new Date(now.getTime() - 24*3600*1000);
+      toEl.value   = toLocalInputValue(now);
+      fromEl.value = toLocalInputValue(dayAgo);
+    }
+  }
+}
+function toLocalInputValue(d) {
+  const pad = n => n.toString().padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function applyCustomRange() {
+  const fromVal = $('cr-from')?.value;
+  const toVal   = $('cr-to')?.value;
+  if (!fromVal || !toVal) { toast('Select both From and To', 'er'); return; }
+  if (new Date(fromVal) >= new Date(toVal)) { toast('From must be before To', 'er'); return; }
+
+  customRange = { from: fromVal, to: toVal };
+  liveMode = false;
+  stopLiveTimer();
+  $('btn-live')?.classList.remove('act-live');
+  $('btn-live')?.classList.add('inactive');
+  document.querySelectorAll('#dh-btns .cbt').forEach(b => b.classList.remove('act'));
+  $('btn-custom-range')?.classList.add('act');
+  toggleCustomPanel(false);
+  if (curId) loadDetailCharts(curId, false);
+}
+// Close the custom range panel when clicking outside it
+document.addEventListener('click', (e) => {
+  const panel = $('custom-range-panel'), btn = $('btn-custom-range');
+  if (!panel || panel.style.display === 'none') return;
+  if (!panel.contains(e.target) && e.target !== btn) toggleCustomPanel(false);
+});
+
+/* ── Toggle chart series visibility ── */
+function setSeriesVisible(dsIdx, visible) {
+  if (!charts.detail) return;
+  charts.detail.data.datasets[dsIdx].hidden = !visible;
+  charts.detail.update();
+}
+
+function toggleSensorGraph(chk) {
+  $('sg-chart-area').style.display = chk.checked ? '' : 'none';
+}
+
+/* ── PRTG Sensor Data table builder ── */
+function buildSensorTable(hist) {
+  if (!hist || !hist.length) {
+    $('sd-tbody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--tx3);padding:18px;">No data yet.</td></tr>';
+    $('sd-count').textContent = '';
+    return;
+  }
+
+  // Compute sums and averages
+  const online = hist.filter(h => h.status === 'online' && h.latency_ms != null);
+  const sumLat = online.reduce((a,h) => a + h.latency_ms, 0);
+  const sumJit = online.reduce((a,h) => a + (h.jitter_ms || 0), 0);
+  const sumLoss = hist.reduce((a,h) => a + (h.packet_loss || 0), 0);
+  const avgLat  = online.length ? (sumLat / online.length).toFixed(1) : '—';
+  const minLat  = online.length ? Math.min(...online.map(h=>h.latency_ms)).toFixed(1) : '—';
+  const maxLat  = online.length ? Math.max(...online.map(h=>h.latency_ms)).toFixed(1) : '—';
+  const avgJit  = online.length ? (sumJit / online.length).toFixed(1) : '—';
+  const avgLoss = hist.length   ? (sumLoss / hist.length).toFixed(1) : '—';
+
+  const headerRows = `
+    <tr class="sd-sum">
+      <td>Sums (${hist.length} values)</td>
+      <td style="text-align:right;">${sumLat.toFixed(1)} ms</td>
+      <td style="text-align:right;">${online.length ? Math.min(...online.map(h=>h.latency_ms)).toFixed(1)+' ms' : '—'}</td>
+      <td style="text-align:right;">${online.length ? Math.max(...online.map(h=>h.latency_ms)).toFixed(1)+' ms' : '—'}</td>
+      <td style="text-align:right;">${sumJit.toFixed(1)} ms</td>
+      <td style="text-align:right;">${sumLoss.toFixed(1)} %</td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:center;">—</td>
+    </tr>
+    <tr class="sd-avg">
+      <td>Averages (${hist.length} values)</td>
+      <td style="text-align:right;">${avgLat} ms</td>
+      <td style="text-align:right;">${online.length ? Math.min(...online.map(h=>h.latency_ms)).toFixed(1)+' ms' : '—'}</td>
+      <td style="text-align:right;">${online.length ? Math.max(...online.map(h=>h.latency_ms)).toFixed(1)+' ms' : '—'}</td>
+      <td style="text-align:right;">${avgJit} ms</td>
+      <td style="text-align:right;">${avgLoss} %</td>
+      <td style="text-align:right;">—</td>
+      <td style="text-align:center;">—</td>
+    </tr>
+    <tr class="sd-divider"><td colspan="8">↓ Individual Records (newest first)</td></tr>`;
+
+  const dataRows = [...hist].reverse().map(h => renderSensorRow(h)).join('');
+  $('sd-tbody').innerHTML = headerRows + dataRows;
+  $('sd-count').textContent = `${hist.length} of ${hist.length} values`;
+}
+
+function renderSensorRow(h) {
+  const ts  = new Date(h.timestamp);
+  const tsFmt = ts.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})
+    + ' ' + ts.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const lat  = h.latency_ms  != null ? h.latency_ms.toFixed(1)+' ms' : '—';
+  const jit  = h.jitter_ms   != null ? h.jitter_ms.toFixed(1)+' ms'  : '—';
+  const loss = h.packet_loss != null ? h.packet_loss.toFixed(1)+' %'  : '0.0 %';
+  const ttl  = h.ttl  != null ? h.ttl : '—';
+  const latColor  = (h.latency_ms||0)>300?'color:var(--R);':(h.latency_ms||0)>150?'color:var(--Y);':'';
+  const lossColor = (h.packet_loss||0)>5?'color:var(--R);':(h.packet_loss||0)>0?'color:var(--Y);':'';
+  const st = h.status === 'online'
+    ? '<span class="sev info">online</span>'
+    : h.status === 'offline'
+      ? '<span class="sev critical">offline</span>'
+      : '<span class="sev warning">unknown</span>';
+  return `<tr>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:10px;white-space:nowrap;">${tsFmt}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;${latColor}">${lat}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;${latColor}">${lat}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;${latColor}">${lat}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${jit}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;${lossColor}">${loss}</td>
+    <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${ttl}</td>
+    <td style="text-align:center;">${st}</td>
+  </tr>`;
+}
+
+/* ── Prepend a single new row at the top of the sensor table (live mode) ── */
+function prependSensorRow(h) {
+  const tbody = $('sd-tbody');
+  if (!tbody) return;
+  // Update sums/avg rows would be expensive every ping — update count only
+  const countEl = $('sd-count');
+  if (countEl) {
+    const n = (_sensorData.length);
+    countEl.textContent = `${n} values (live)`;
+  }
+  // Find the divider row and insert after it
+  const divider = tbody.querySelector('.sd-divider');
+  const newRow = document.createElement('tr');
+  newRow.innerHTML = renderSensorRow(h).replace('<tr>','').replace('</tr>','');
+  newRow.style.animation = 'fadeIn 0.4s ease';
+  if (divider && divider.nextSibling) {
+    tbody.insertBefore(newRow, divider.nextSibling);
+  } else if (divider) {
+    tbody.appendChild(newRow);
+  } else {
+    tbody.insertBefore(newRow, tbody.firstChild);
+  }
+  // Trim table to 300 rows max
+  const rows = tbody.querySelectorAll('tr:not(.sd-sum):not(.sd-avg):not(.sd-divider)');
+  if (rows.length > 300) rows[rows.length-1].remove();
+}
+
+/* ── CSV Export ── */
+function exportSensorCSV() {
+  if (!_sensorData.length) { toast('No data to export', 'er'); return; }
+  const rows = [['timestamp','status','latency_ms','jitter_ms','packet_loss','ttl']];
+  for (const h of _sensorData) {
+    rows.push([h.timestamp, h.status, h.latency_ms??'', h.jitter_ms??'', h.packet_loss??'', h.ttl??'']);
+  }
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `sensor_${curId}_${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}.csv`;
+  a.click();
+}
+
+
+
+
+async function loadUBar(id) {
+  const hist = await G(`/api/host/${id}/history?hours=24`);
+  if (!hist) return;
+  const N = 48, now = Date.now(), segMs = 30 * 60 * 1000;
+  const segs = Array(N).fill('uk');
+  hist.forEach(h => {
+    const ts = new Date(h.timestamp).getTime();
+    const idx = Math.floor((now - ts) / segMs);
+    if (idx >= 0 && idx < N) segs[N - 1 - idx] = h.status === 'online' ? 'up' : 'dn';
+  });
+  $('ubar').innerHTML = segs.map(x => `<div class="useg ${x}"></div>`).join('');
+  const up = segs.filter(x => x==='up').length;
+  const dn = segs.filter(x => x==='dn').length;
+  const uk = N - up - dn;
+  $('ust').innerHTML = `
+    <span style="color:var(--G)">▲ ${(up/N*100).toFixed(1)}% uptime</span><br/>
+    <span style="color:var(--R)">▼ ${dn * 30} min offline</span><br/>
+    <span style="color:var(--tx3)">${uk * 30} min no data</span>`;
+}
+
+async function loadHostAlerts(id) {
+  const al = await G('/api/alerts?limit=50');
+  const ha = (al||[]).filter(a => a.host_id === id);
+  if (!ha.length) {
+    $('host-alrs').innerHTML = '<div class="no-data"><div class="ni">✅</div>No alerts for this host</div>';
+    return;
+  }
+  $('host-alrs').innerHTML = `
+    <table class="tbl"><thead><tr><th>Time</th><th>Severity</th><th>Message</th><th>Ack'd By</th><th>Action</th></tr></thead>
+    <tbody>${ha.map(a => `
+      <tr>
+        <td style="font-size:9px;color:var(--tx3);white-space:nowrap;">${fmtT(a.timestamp)}</td>
+        <td><span class="sev ${esc(a.severity)}">${esc(a.severity)}</span></td>
+        <td style="font-size:10px;">${esc(a.message)}</td>
+        <td style="font-size:9px;color:var(--tx3);">${esc(a.ack_by||'')}</td>
+        <td>${a.acknowledged
+          ? '<span style="color:var(--G);font-size:10px;">✓</span>'
+          : `<button class="ackb" onclick="ackOne(${a.id})">Ack</button>`}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+
+/* ═══════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════ */
+async function loadSbHosts() {
+  const hs = await G('/api/hosts');
+  if (!hs) return;
+  hosts = hs; allHosts = hs;
+  $('sb-hosts').innerHTML = hs.map(h => `
+    <div class="he ${curId===h.id?'sel':''}" onclick="openDetail(${h.id})">
+      <div class="hdot ${h.status||'unknown'}"></div>
+      <div class="hn">${esc(h.name||h.ip)}</div>
+      <div class="hl">${h.latency!=null?h.latency.toFixed(0)+'ms':'—'}</div>
+    </div>`).join('');
+}
+
+function toggleSb() {
+  sbCol = !sbCol;
+  $('sb').classList.toggle('col', sbCol);
+  $('sbtog').textContent = sbCol ? '▶' : '◀';
+}
+
+/* ═══════════════════════════════════════════
+   HOST ACTIONS
+═══════════════════════════════════════════ */
+async function addHost() {
+  const ip = $('h-ip').value.trim();
+  if (!ip) { toast('IP address is required','er'); return; }
+  const r = await P('/api/hosts', {
+    ip, name:$('h-nm').value.trim()||null,
+    group:$('h-gp').value.trim()||'Default',
+    location:$('h-loc').value.trim(),
+    tags:$('h-tg').value.trim(),
+    alert_email:$('h-em').value.trim(),
+    interval:parseInt($('h-iv').value)||30,
+    packet_count:parseInt($('h-pc').value)||4,
+    timeout_ms:parseInt($('h-to').value)||1000,
+    port_checks:$('h-pt').value.trim(),
+    notes:$('h-nt').value.trim()
+  });
+  if (r?.success) {
+    closeM('mAdd');
+    // Clear form
+    ['h-ip','h-nm','h-tg','h-em','h-nt','h-loc','h-pt'].forEach(i => $(i).value='');
+    $('h-gp').value='Default';
+    await loadDash(); await loadSbHosts();
+    toast(`✅ ${ip} added — monitoring started!`, 'ok');
+  } else {
+    toast('Error: ' + (r?.error||'Unknown'), 'er');
+  }
+}
+
+function editById(id) {
+  const h = allHosts.find(h => h.id===id); if (!h) return;
+  $('eh-id').value=id; $('eh-ip').value=h.ip; $('eh-nm').value=h.name||'';
+  $('eh-gp').value=h.group_name||''; $('eh-loc').value=h.location||'';
+  $('eh-tg').value=h.tags||''; $('eh-em').value=h.alert_email||'';
+  $('eh-iv').value=h.ping_interval; $('eh-pc').value=h.packet_count;
+  $('eh-to').value=h.timeout_ms||1000; $('eh-pt').value=h.port_checks||'';
+  $('eh-nt').value=h.notes||'';
+  openM('mEdit');
+}
+
+function editCurrent() { if (curId) editById(curId); }
+
+async function saveEdit() {
+  const id = parseInt($('eh-id').value);
+  const r = await P(`/api/hosts/${id}`, {
+    name:$('eh-nm').value, group:$('eh-gp').value,
+    location:$('eh-loc').value, tags:$('eh-tg').value,
+    alert_email:$('eh-em').value,
+    interval:parseInt($('eh-iv').value),
+    packet_count:parseInt($('eh-pc').value),
+    timeout_ms:parseInt($('eh-to').value),
+    port_checks:$('eh-pt').value, notes:$('eh-nt').value
+  });
+  if (r?.success) {
+    closeM('mEdit');
+    await loadSbHosts(); await loadHosts();
+    toast('✅ Host updated', 'ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function delHost(id, e) {
+  if (e) e.stopPropagation();
+  if (!confirm('Remove this host and ALL its historical data? This cannot be undone.')) return;
+  await D(`/api/hosts/${id}`);
+  if (curId===id) { curId=null; nav('hosts'); }
+  await loadDash(); await loadSbHosts();
+  toast('Host removed','ok');
+}
+function delCurrent() { if (curId) delHost(curId); }
+
+async function pingNow() {
+  if (!curId) return;
+  const h = allHosts.find(h => h.id===curId); if (!h) return;
+  toast('📡 Pinging ' + h.ip + '...');
+  const r = await P(`/api/ping/${h.ip}`, {});
+  if (!r) return;
+  const st = r.status==='online';
+  toast(`${st?'🟢':'🔴'} ${r.status.toUpperCase()} · ${r.latency?.toFixed(1)||'—'}ms · ${r.loss}% loss`, st?'ok':'er');
+  setTimeout(() => loadDetail(curId, false), 3500);
+}
+
+async function doTrace() {
+  if (!curId) return;
+  const h = allHosts.find(h => h.id===curId); if (!h) return;
+  $('trbox').textContent = 'Tracing route to ' + h.ip + '...\n(This may take up to 45 seconds)';
+  const r = await G(`/api/traceroute/${h.ip}`);
+  $('trbox').textContent = r?.output || 'No output returned.';
+}
+
+/* ═══════════════════════════════════════════
+   ALERTS
+═══════════════════════════════════════════ */
+async function loadAlerts() {
+  const [al, st] = await Promise.all([
+    G('/api/alerts?limit=300'),
+    G('/api/alerts/stats')
+  ]);
+  if (!al) return;
+  if (st) {
+    $('alert-stats-row').innerHTML = `
+      <div class="sc warn" style="padding:10px;"><span class="scic">🕐</span><div><div class="scn" style="font-size:18px;">${st.last_24h}</div><div class="scl">Last 24 Hours</div></div></div>
+      <div class="sc inf"  style="padding:10px;"><span class="scic">📅</span><div><div class="scn" style="font-size:18px;">${st.last_7d}</div><div class="scl">Last 7 Days</div></div></div>
+      <div class="sc off"  style="padding:10px;"><span class="scic">🚨</span><div><div class="scn" style="font-size:18px;">${st.critical_unacked}</div><div class="scl">Critical Unacked</div></div></div>`;
+  }
+  $('alr-body').innerHTML = al.length
+    ? al.map(a => `
+      <tr>
+        <td style="font-size:9px;white-space:nowrap;color:var(--tx3);">${fmtT(a.timestamp)}</td>
+        <td style="font-weight:500;">${esc(a.host_name||'?')}</td>
+        <td><span style="font-family:'JetBrains Mono',monospace;font-size:9px;">${esc(a.ip||'')}</span></td>
+        <td><span class="sev ${esc(a.severity)}">${esc(a.severity)}</span></td>
+        <td style="font-size:10px;">${esc(a.message)}</td>
+        <td style="font-size:9px;color:var(--tx3);">${esc(a.ack_by||'')}</td>
+        <td>${a.acknowledged
+          ? '<span style="color:var(--G);font-size:10px;">✓ Acked</span>'
+          : `<button class="ackb" onclick="ackOne(${a.id})">Ack</button>`}
+        </td>
+        <td><button class="btn btnS" onclick="deleteAlert(${a.id})" title="Delete this alert" style="padding:3px 8px;font-size:9px;color:#dc2626;border-color:#dc2626;">🗑</button></td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--tx3);">No alerts found</td></tr>';
+}
+
+async function loadAlertCount() {
+  const r = await G('/api/alerts/count');
+  if (!r) return;
+  const cnt = r.count;
+  $('abadge').style.display = cnt > 0 ? 'inline' : 'none';
+  if (cnt > 0) $('abadge').textContent = cnt;
+  $('sb-ac').textContent = cnt;
+}
+
+async function ackOne(id) {
+  await P(`/api/alerts/${id}/ack`, {});
+  loadAlerts(); loadAlertCount(); loadDashAlerts();
+  toast('✓ Alert acknowledged', 'ok');
+}
+
+async function ackAll() {
+  await P('/api/alerts/ack_all', {});
+  loadAlerts(); loadAlertCount(); loadDashAlerts();
+  toast('✓ All alerts acknowledged', 'ok');
+}
+
+async function deleteAlert(id) {
+  await D(`/api/alerts/${id}`);
+  loadAlerts(); loadAlertCount(); loadDashAlerts();
+  toast('🗑 Alert deleted', 'ok');
+}
+
+async function deleteAcked() {
+  if (!confirm('Delete all acknowledged alerts? This cannot be undone.')) return;
+  const r = await D('/api/alerts?acknowledged=1');
+  loadAlerts(); loadAlertCount(); loadDashAlerts();
+  toast(`🗑 Deleted ${r?.deleted ?? 0} acknowledged alert(s)`, 'ok');
+}
+
+async function deleteAllAlerts() {
+  if (!confirm('Delete ALL alerts (acknowledged and unacknowledged)? This cannot be undone.')) return;
+  const r = await D('/api/alerts');
+  loadAlerts(); loadAlertCount(); loadDashAlerts();
+  toast(`🗑 Deleted ${r?.deleted ?? 0} alert(s)`, 'ok');
+}
+
+/* ═══════════════════════════════════════════
+   ALERT RULES
+═══════════════════════════════════════════ */
+async function loadRules() {
+  const r = await G('/api/alert_rules'); if (!r) return;
+  const isAdmin = SESSION?.role==='admin';
+  $('rules-body').innerHTML = r.length
+    ? r.map(x => `
+      <tr>
+        <td style="font-weight:600;">${esc(x.name)}</td>
+        <td>${esc(x.host_name||'All Hosts')}</td>
+        <td><code style="color:var(--acc);font-size:10px;background:var(--bg3);padding:2px 6px;border-radius:4px;">${esc(x.condition)}</code></td>
+        <td>${x.threshold} ${x.condition.includes('loss')?'%':'ms'}</td>
+        <td>${x.cooldown_mins} min</td>
+        <td style="font-size:10px;">${esc(x.notify_email||'—')}</td>
+        <td style="font-size:9px;color:var(--tx3);">${x.last_triggered?fmtT(x.last_triggered):'Never'} (×${x.trigger_count||0})</td>
+        <td><label style="cursor:pointer;font-size:11px;"><input type="checkbox" ${x.enabled?'checked':''} ${!isAdmin?'disabled':''} onchange="toggleRule(${x.id},this.checked)"> On</label></td>
+        <td>${isAdmin?`<button class="ackb" onclick="delRule(${x.id})" style="color:var(--R);border-color:var(--R);">Delete</button>`:''}</td>
+      </tr>`).join('')
+    : '<tr><td colspan="9" style="text-align:center;padding:18px;color:var(--tx3);">No alert rules. Add one to start receiving notifications.</td></tr>';
+}
+
+async function addRule() {
+  const nm = $('r-nm').value.trim();
+  if (!nm) { toast('Rule name required','er'); return; }
+  const r = await P('/api/alert_rules', {
+    name: nm,
+    host_id: parseInt($('r-hs').value)||0,
+    condition: $('r-cn').value,
+    threshold: parseFloat($('r-th').value)||0,
+    cooldown_mins: parseInt($('r-cd').value)||5,
+    notify_email: $('r-em').value.trim()
+  });
+  if (r?.success) {
+    closeM('mRule'); loadRules();
+    toast('✅ Alert rule created','ok');
+    $('r-nm').value=''; $('r-th').value=''; $('r-em').value='';
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function delRule(id) {
+  if (!confirm('Delete this alert rule?')) return;
+  await D(`/api/alert_rules/${id}`);
+  loadRules(); toast('Rule deleted','ok');
+}
+
+async function toggleRule(id, en) {
+  await P(`/api/alert_rules/${id}/toggle`, {enabled: en?1:0});
+  toast(en ? '✅ Rule enabled' : 'Rule disabled', 'ok');
+}
+
+/* ═══════════════════════════════════════════
+   UPTIME REPORT
+═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════
+   UPTIME REPORT
+═══════════════════════════════════════════ */
+let _repDays = 7;
+
+function setRepRange(days, btn) {
+  _repDays = days;
+  document.querySelectorAll('#page-report .cbt').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act');
+  loadReport();
+}
+
+async function loadReport() {
+  $('rep-body').innerHTML = '<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--tx3);">Loading…</td></tr>';
+
+  // Show cache age
+  const ca = await G('/api/report/cache-age');
+  if (ca) {
+    const ageTxt = ca.age_secs != null
+      ? (ca.age_secs < 60 ? `${ca.age_secs}s` : `${Math.round(ca.age_secs/60)}m`) + ' ago'
+      : 'building…';
+    const nextTxt = ca.next_refresh_secs != null ? `next in ${Math.round(ca.next_refresh_secs/60)}m` : '';
+    $('rep-period').textContent = `Cache: ${ageTxt} · ${nextTxt} · ${ca.host_count} hosts`;
+  }
+
+  const r = await G('/api/report/uptime'); if (!r) return;
+
+  const upC = p => p>=99?'good':p>=95?'warn':'bad';
+  const upStyle = p => p>=99?'color:var(--G);font-weight:700;':p>=95?'color:var(--Y);font-weight:600;':'color:var(--R);font-weight:700;';
+
+  // KPI summary boxes
+  const total    = r.length;
+  const online   = r.filter(x=>x.current_status==='online').length;
+  const avgUp7   = total ? (r.reduce((a,x)=>a+x.uptime_7d,0)/total).toFixed(2) : '—';
+  const avgUp30  = total ? (r.reduce((a,x)=>a+x.uptime_30d,0)/total).toFixed(2) : '—';
+  const totalInc = r.reduce((a,x)=>a+x.incidents,0);
+  const totalDwn = r.reduce((a,x)=>a+x.downtime_mins,0).toFixed(0);
+  $('rep-kpis').innerHTML = [
+    {val: total,    lbl: 'Total Hosts',     col: 'var(--tx)'},
+    {val: online,   lbl: 'Online Now',      col: online===total?'var(--G)':'var(--Y)'},
+    {val: avgUp7+'%',  lbl: 'Avg Uptime 7D',  col: parseFloat(avgUp7)>=99?'var(--G)':parseFloat(avgUp7)>=95?'var(--Y)':'var(--R)'},
+    {val: avgUp30+'%', lbl: 'Avg Uptime 30D', col: parseFloat(avgUp30)>=99?'var(--G)':parseFloat(avgUp30)>=95?'var(--Y)':'var(--R)'},
+    {val: totalInc, lbl: 'Incidents (7D)',  col: totalInc>0?'var(--R)':'var(--G)'},
+    {val: totalDwn+' min', lbl:'Total Downtime', col: parseInt(totalDwn)>0?'var(--Y)':'var(--G)'},
+  ].map(k=>`<div class="card" style="padding:12px 14px;text-align:center;">
+    <div style="font-size:22px;font-weight:700;color:${k.col};">${k.val}</div>
+    <div style="font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px;margin-top:3px;">${k.lbl}</div>
+  </div>`).join('');
+
+  $('rep-period').textContent = `Showing last ${_repDays}d · ${total} hosts`;
+
+  // Main table
+  $('rep-body').innerHTML = r.length
+    ? r.map(x => {
+        const stCls = x.current_status==='online'?'info':x.current_status==='offline'?'critical':'warning';
+        const latColor = (x.avg_latency||0)>200?'color:var(--R);':(x.avg_latency||0)>100?'color:var(--Y);':'';
+        return `<tr>
+          <td style="font-weight:600;">${esc(x.name||'—')}</td>
+          <td style="font-family:'JetBrains Mono',monospace;font-size:10px;">${esc(x.ip)}</td>
+          <td><span style="font-size:10px;color:var(--tx3);">${esc(x.group||'—')}</span></td>
+          <td><span class="sev ${stCls}">${esc(x.current_status||'?')}</span></td>
+          <td style="text-align:right;${upStyle(x.uptime_1d)}">${x.uptime_1d.toFixed(3)}%</td>
+          <td style="text-align:right;${upStyle(x.uptime_7d)}">${x.uptime_7d.toFixed(3)}%</td>
+          <td style="text-align:right;${upStyle(x.uptime_30d)}">${x.uptime_30d.toFixed(3)}%</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;${latColor}">${x.avg_latency!=null?x.avg_latency.toFixed(1):'—'} ms</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;${(x.max_latency||0)>300?'color:var(--R);':''}">${x.max_latency!=null?x.max_latency.toFixed(1):'—'} ms</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;${(x.avg_loss||0)>1?'color:var(--R);':''}">${x.avg_loss!=null?x.avg_loss.toFixed(2):'0.00'}%</td>
+          <td style="text-align:right;${x.incidents>0?'color:var(--R);font-weight:700;':''}">${x.incidents}</td>
+          <td style="text-align:right;font-family:'JetBrains Mono',monospace;">${x.downtime_mins} min</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--tx3);">No data yet. Hosts will appear here once monitoring begins.</td></tr>';
+
+  // SLA section
+  const slaLevels = [
+    {label:'99.9% (Three Nines)',  target:99.9},
+    {label:'99.5%',                target:99.5},
+    {label:'99.0% (Two Nines)',    target:99.0},
+    {label:'95.0%',                target:95.0},
+  ];
+  $('rep-sla').innerHTML = slaLevels.map(sla => {
+    const pass = r.filter(x=>x.uptime_30d>=sla.target).length;
+    const pct  = total ? Math.round(pass/total*100) : 0;
+    const col  = pct===100?'var(--G)':pct>=80?'var(--Y)':'var(--R)';
+    return `<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;">
+      <div style="font-size:11px;font-weight:700;color:${col};margin-bottom:6px;">${sla.label}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;background:var(--bg2);border-radius:4px;height:8px;">
+          <div style="width:${pct}%;background:${col};border-radius:4px;height:8px;transition:width 0.4s;"></div>
+        </div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${col};min-width:40px;">${pass}/${total}</span>
+      </div>
+      <div style="font-size:9px;color:var(--tx3);margin-top:4px;">${pct}% of hosts meet this SLA (30d)</div>
+    </div>`;
+  }).join('');
+}
+
+async function exportReportCSV() {
+  try {
+    const r = await fetch(API + '/api/report/export', {
+      headers: { 'Authorization': 'Bearer ' + SESSION?.token }
+    });
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'abayonet_report_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    toast('✅ Report exported as CSV','ok');
+  } catch(e) { toast('Export failed: '+e.message,'er'); }
+}
+
+// Open a print-ready PDF-style HTML report (weekly or monthly) in a new tab.
+// window.open(url) alone won't carry the Authorization header (token lives in
+// localStorage, not a cookie), so we fetch it ourselves and hand the browser
+// a blob URL to display instead — this is what was causing the
+// {"error":"Unauthorized","login_required":true} response.
+async function openPdfReport(period) {
+  try {
+    const r = await fetch(API + '/api/report/' + period, {
+      headers: { 'Authorization': 'Bearer ' + SESSION?.token }
+    });
+    if (r.status === 401) { toast('Session expired — please log in again','er'); return; }
+    if (!r.ok) { toast('Failed to generate report ('+r.status+')','er'); return; }
+    const html = await r.text();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, '_blank');
+    if (!w) toast('Pop-up blocked — allow pop-ups to view the report','er');
+    // Release the blob URL once the new tab has had a chance to load it.
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+  } catch(e) { toast('Report failed: '+e.message,'er'); }
+}
+
+async function forceRefreshReport() {
+  toast('⚡ Rebuilding report cache… (~5-10s for large deployments)', 'ok');
+  await P('/api/report/refresh', {});
+  // Poll until cache is fresh
+  let tries = 0;
+  const poll = setInterval(async () => {
+    tries++;
+    const ca = await G('/api/report/cache-age');
+    if ((ca?.age_secs != null && ca.age_secs < 10) || tries > 30) {
+      clearInterval(poll);
+      await loadReport();
+      toast('✅ Report cache rebuilt', 'ok');
+    }
+  }, 1000);
+}
+
+// Keep backward compat
+async function exportCSV() { exportReportCSV(); }
+
+
+
+/* ═══════════════════════════════════════════
+   MAINTENANCE
+═══════════════════════════════════════════ */
+async function loadMaint() {
+  const r = await G('/api/maintenance'); if (!r) return;
+  const now = new Date(); const isAdmin = SESSION?.role==='admin';
+  $('maint-body').innerHTML = r.length
+    ? r.map(m => {
+        const active = new Date(m.start_time)<=now && new Date(m.end_time)>=now;
+        const past   = new Date(m.end_time) < now;
+        return `
+        <tr>
+          <td style="font-weight:500;">${esc(m.name)}</td>
+          <td>${esc(m.host_name||'All Hosts')}</td>
+          <td style="font-size:10px;">${fmtT(m.start_time)}</td>
+          <td style="font-size:10px;">${fmtT(m.end_time)}</td>
+          <td><span class="sev ${active?'warning':past?'info':'critical'}">${active?'ACTIVE':past?'ENDED':'UPCOMING'}</span></td>
+          <td>${isAdmin?`<button class="ackb" onclick="delMaint(${m.id})" style="color:var(--R);border-color:var(--R);">Delete</button>`:''}</td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" style="text-align:center;padding:18px;color:var(--tx3);">No maintenance windows scheduled.</td></tr>';
+}
+
+async function addMaint() {
+  const nm = $('m-nm').value.trim();
+  const st = $('m-st').value;
+  const et = $('m-et').value;
+  if (!nm || !st || !et) { toast('Name, start and end time required','er'); return; }
+  if (new Date(et) <= new Date(st)) { toast('End time must be after start time','er'); return; }
+  const r = await P('/api/maintenance', {
+    host_id: $('m-hs').value||null, name:nm, start_time:st, end_time:et
+  });
+  if (r?.success) {
+    closeM('mMaint'); loadMaint(); toast('✅ Maintenance window scheduled','ok');
+    $('m-nm').value='';
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function delMaint(id) {
+  if (!confirm('Delete this maintenance window?')) return;
+  await D(`/api/maintenance/${id}`);
+  loadMaint(); toast('Deleted','ok');
+}
+
+/* ═══════════════════════════════════════════
+   USER MANAGEMENT
+═══════════════════════════════════════════ */
+async function loadUsers() {
+  const r = await G('/api/users'); if (!r) return;
+  $('users-body').innerHTML = r.length
+    ? r.map(u => `
+      <tr>
+        <td style="font-weight:600;font-family:'JetBrains Mono',monospace;">${esc(u.username)}</td>
+        <td>${esc(u.full_name||'—')}</td>
+        <td style="font-size:10px;">${esc(u.email||'—')}</td>
+        <td><span class="user-role ${u.role}">${esc(u.role)}</span></td>
+        <td style="font-size:9px;color:var(--tx3);">${fmtT(u.created_at)}</td>
+        <td style="font-size:9px;color:var(--tx3);">${u.last_login?fmtT(u.last_login):'Never'}</td>
+        <td><span style="font-size:10px;color:${u.active?'var(--G)':'var(--R)'};">${u.active?'✓ Active':'✗ Disabled'}</span></td>
+        <td style="display:flex;gap:4px;">
+          <button class="ackb" onclick="openResetPw(${u.id},'${esc(u.username)}')" title="Reset password">🔑</button>
+          ${u.id!==1?`<button class="ackb" onclick="toggleUser(${u.id},${u.active?0:1})" title="${u.active?'Disable':'Enable'}">${u.active?'⏸':'▶'}</button>`:''}
+          ${u.id!==1?`<button class="ackb" onclick="delUser(${u.id})" style="color:var(--R);border-color:var(--R);" title="Delete user">🗑</button>`:''}
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--tx3);">No users found.</td></tr>';
+}
+
+async function createUser() {
+  const nm  = $('u-nm').value.trim();
+  const pw  = $('u-pw').value;
+  const fn  = $('u-fn').value.trim();
+  const em  = $('u-em').value.trim();
+  const rol = $('u-role').value;
+  if (!nm)     { toast('Username required','er'); return; }
+  if (pw.length<6) { toast('Password must be at least 6 characters','er'); return; }
+  const r = await P('/api/users', {username:nm, password:pw, role:rol, full_name:fn, email:em});
+  if (r?.success) {
+    closeM('mUser'); loadUsers();
+    toast(`✅ User "${nm}" created successfully`, 'ok');
+    ['u-nm','u-pw','u-fn','u-em'].forEach(i => $(i).value='');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+function openResetPw(uid, username) {
+  $('rp-uid').value=uid; $('rp-un').value=username; $('rp-pw').value='';
+  openM('mResetPw');
+}
+
+async function doResetPw() {
+  const uid = parseInt($('rp-uid').value);
+  const pw  = $('rp-pw').value;
+  if (pw.length<6) { toast('Password must be at least 6 characters','er'); return; }
+  const r = await P(`/api/users/${uid}/reset_password`, {password:pw});
+  if (r?.success) {
+    closeM('mResetPw'); loadUsers(); toast('✅ Password reset successfully','ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function toggleUser(uid, active) {
+  await P(`/api/users/${uid}/toggle`, {active});
+  loadUsers(); toast(active ? '✅ User enabled' : 'User disabled','ok');
+}
+
+async function delUser(uid) {
+  if (!confirm('Permanently delete this user? This cannot be undone.')) return;
+  const r = await D(`/api/users/${uid}`);
+  if (r?.success) { loadUsers(); toast('User deleted','ok'); }
+  else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+/* ═══════════════════════════════════════════
+   IMPORT / EXPORT
+═══════════════════════════════════════════ */
+async function exportHosts(format) {
+  const r = await fetch(API + `/api/hosts/export/${format}`, {
+    headers: { 'Authorization': 'Bearer ' + SESSION?.token }
+  });
+  const cd = r.headers.get('Content-Disposition')||'';
+  const match = cd.match(/filename="?([^"]+)"?/);
+  const fname = match ? match[1] : `abayonet_hosts.${format}`;
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  toast(`✅ Hosts exported as ${format.toUpperCase()}`, 'ok');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  $('import-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) readImportFile(file);
+}
+
+function handleImportFile(e) {
+  const file = e.target.files[0];
+  if (file) readImportFile(file);
+}
+
+async function readImportFile(file) {
+  const res = $('import-result');
+  res.style.display = 'block';
+  res.innerHTML = '<span style="color:var(--Y);">⏳ Reading file...</span>';
+  try {
+    const text = await file.text();
+
+    // Parse JSON
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(parseErr) {
+      res.innerHTML = `<span style="color:var(--R);">❌ Cannot read file — not valid JSON.<br/><small>${esc(parseErr.message)}</small></span>`;
+      $('import-file').value = '';
+      return;
+    }
+
+    // Count hosts for display (support all formats)
+    let hostCount = 0;
+    if (Array.isArray(data))            hostCount = data.length;
+    else if (Array.isArray(data.hosts)) hostCount = data.hosts.length;
+    else if (Array.isArray(data.ips))   hostCount = data.ips.length;
+    else                                hostCount = data.host_count || '?';
+
+    res.innerHTML = `<span style="color:var(--Y);">⏳ Importing ${hostCount} host(s)… please wait</span>`;
+
+    const r = await P('/api/hosts/import', data);
+    if (r?.success) {
+      res.innerHTML = `
+        <span style="color:var(--G);">✅ Import complete!</span><br/>
+        <span style="color:var(--tx2);">
+          ✅ Added:   <strong style="color:var(--G);">${r.added}</strong> new hosts<br/>
+          ⏭ Skipped: <strong style="color:var(--Y);">${r.skipped}</strong> already exist<br/>
+          ❌ Errors:  <strong style="color:${r.errors?'var(--R)':'var(--G)'};">${r.errors}</strong>
+        </span>`;
+      await loadDash();
+      await loadSbHosts();
+      toast(`✅ Imported ${r.added} host(s)`, 'ok');
+    } else {
+      res.innerHTML = `<span style="color:var(--R);">❌ ${esc(r?.error || 'Import failed — check the server log')}</span>`;
+    }
+  } catch(e) {
+    res.innerHTML = `<span style="color:var(--R);">❌ Unexpected error: ${esc(e.message)}</span>`;
+  }
+  $('import-file').value = '';
+}
+
+/* ═══════════════════════════════════════════
+   NETWORK SCAN
+═══════════════════════════════════════════ */
+async function doScan() {
+  const sub = $('scan-sub').value.trim();
+  if (!sub) { toast('Enter a subnet','er'); return; }
+  $('scan-st').textContent = '⏳ Scanning ' + sub + ' ... (30–60 seconds, please wait)';
+  $('scan-res').innerHTML = '';
+  const subnet = sub.includes('/') ? sub : sub + '.0/24';
+  const r = await P('/api/scan', {subnet});
+  if (!r) { $('scan-st').textContent = '❌ Scan failed — server error.'; return; }
+  if (!Array.isArray(r)) { $('scan-st').textContent = '❌ ' + (r.error||'Unknown error'); return; }
+  $('scan-st').textContent = `✅ Found ${r.length} live host${r.length!==1?'s':''}`;
+  $('scan-res').innerHTML = r.map(x => `
+    <div class="scancard">
+      <div style="font-size:14px;">🟢</div>
+      <div style="flex:1;min-width:0;">
+        <div class="scanip">${esc(x.ip)}</div>
+        ${x.hostname?`<div style="font-size:9px;color:var(--tx2);">${esc(x.hostname)}</div>`:''}
+        <div style="font-size:9px;color:var(--tx3);">${x.latency_ms!=null?x.latency_ms.toFixed(1):'—'}ms · TTL ${x.ttl||'—'}</div>
+      </div>
+      <button class="btn btnA" onclick="quickAdd('${esc(x.ip)}','${esc(x.hostname||x.ip)}')" style="padding:3px 8px;font-size:9px;">+ Add</button>
+    </div>`).join('');
+}
+
+async function quickAdd(ip, name) {
+  const r = await P('/api/hosts', {ip, name, group:'Scanned', interval:30, packet_count:4});
+  if (r?.success) {
+    await loadSbHosts(); await loadDash();
+    toast(`✅ ${ip} added and monitoring started`, 'ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS
+═══════════════════════════════════════════ */
+async function loadSettings() {
+  const s = await G('/api/settings'); if (!s) return;
+  $('s-sh').value = s.smtp_host||'';
+  $('s-sp').value = s.smtp_port||'587';
+  $('s-su').value = s.smtp_user||'';
+  $('s-sw').value = s.smtp_pass||'';
+  $('s-dr').value = s.data_retention_days||'30';
+  $('s-ac').value = s.alert_cooldown||'300';
+  $('s-ri').value = s.refresh_interval||'10';
+  $('s-cn').value = s.company_name||'';
+  rSec = parseInt(s.refresh_interval||'10');
+}
+
+async function saveSettings() {
+  const r = await P('/api/settings', {
+    smtp_host:$('s-sh').value,
+    smtp_port:$('s-sp').value,
+    smtp_user:$('s-su').value,
+    smtp_pass:$('s-sw').value,
+    data_retention_days:$('s-dr').value,
+    alert_cooldown:$('s-ac').value,
+    refresh_interval:$('s-ri').value,
+    company_name:$('s-cn').value
+  });
+  if (r?.success) {
+    rSec = parseInt($('s-ri').value)||10;
+    toast('✅ Settings saved', 'ok');
+  } else toast('Error: '+(r?.error||'Unknown'),'er');
+}
+
+async function changePassword() {
+  const old  = $('cp-old').value;
+  const nw   = $('cp-new').value;
+  const conf = $('cp-confirm').value;
+  if (!old || !nw) { toast('Fill in all password fields','er'); return; }
+  if (nw !== conf) { toast('New passwords do not match','er'); return; }
+  if (nw.length < 6) { toast('Password must be at least 6 characters','er'); return; }
+  const r = await P('/api/users/change_password', {old_password:old, new_password:nw});
+  if (r?.success) {
+    $('cp-old').value=''; $('cp-new').value=''; $('cp-confirm').value='';
+    toast('✅ Password changed successfully', 'ok');
+  } else toast('Error: '+(r?.error||'Incorrect current password'),'er');
+}
+
+/* ═══════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════ */
+function setTheme(cls, name) {
+  document.body.className = cls;
+  localStorage.setItem('abn-theme', cls);
+  document.querySelectorAll('.tsw').forEach(s => s.classList.remove('act'));
+  if (event?.target) event.target.classList.add('act');
+  toast('🎨 Theme: ' + name, 'ok');
+}
+function loadTheme() {
+  const t = localStorage.getItem('abn-theme') || '';
+  document.body.className = t;
+}
+
+/* ═══════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════ */
+function openM(id)  { $(id).classList.add('open'); }
+function closeM(id) { $(id).classList.remove('open'); }
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('mbg')) e.target.classList.remove('open');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.mbg.open').forEach(m => m.classList.remove('open'));
+});
+
+/* ═══════════════════════════════════════════
+   CLOCK & UTILS
+═══════════════════════════════════════════ */
+function startClock() {
+  const tick = () => { const n=new Date(); $('clk').textContent=n.toLocaleTimeString(); };
+  tick(); setInterval(tick, 1000);
+}
+
+function fmtT(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString(undefined, {
+    year:'numeric', month:'short', day:'2-digit',
+    hour:'2-digit', minute:'2-digit', second:'2-digit'
+  });
+}
+
+let _tt;
+function toast(msg, type='') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = type ? `show ${type}` : 'show';
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.className = '', 3200);
+}
+
+/* ═══════════════════════════════════════════
+   HISTORY ANALYSIS
+═══════════════════════════════════════════ */
+let _analysisData = null;
+
+async function loadAnalysis() {
+  const hs = await G('/api/hosts');
+  if (!hs) return;
+  const sel = $('an-hosts');
+  if (!sel) return;
+  sel.innerHTML = hs.map(h =>
+    `<option value="${h.id}">${h.name || h.ip} (${h.ip})</option>`
+  ).join('');
+  $('an-results').innerHTML = '<div style="color:var(--tx3);font-size:12px;padding:16px;">Select one or more hosts above and click Run Analysis.</div>';
+}
+
+async function runAnalysis() {
+  const sel = $('an-hosts');
+  const hours = parseInt($('an-hours').value);
+  const ids = Array.from(sel.selectedOptions).map(o => parseInt(o.value));
+  if (!ids.length) { toast('Select at least one host', 'er'); return; }
+
+  $('an-results').innerHTML = '<div style="color:var(--tx2);font-size:12px;padding:16px;">⏳ Loading history…</div>';
+  const data = await G(`/api/history/multi?ids=${ids.join(',')}&hours=${hours}`);
+  if (!data) return;
+  _analysisData = data;
+
+  const container = $('an-results');
+  container.innerHTML = '';
+
+  // Summary stats table
+  const summaryRows = Object.entries(data).map(([id, hd]) => {
+    const online = hd.data.filter(r => r.status === 'online');
+    const total = hd.data.length;
+    const upPct = total ? (online.length / total * 100).toFixed(2) : '—';
+    const lats = online.map(r => r.latency_ms).filter(v => v != null);
+    const avgLat = lats.length ? (lats.reduce((a,b) => a+b, 0) / lats.length).toFixed(1) : '—';
+    const maxLat = lats.length ? Math.max(...lats).toFixed(1) : '—';
+    const avgLoss = total ? (hd.data.reduce((a,r) => a+(r.packet_loss||0),0)/total).toFixed(1) : '—';
+    return `<tr>
+      <td><strong>${esc(hd.name)}</strong><br/><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--tx3);">${esc(hd.ip)}</span></td>
+      <td>${total}</td>
+      <td><span class="upbar ${parseFloat(upPct)>=99?'good':parseFloat(upPct)>=95?'warn':'bad'}">${upPct}%</span></td>
+      <td>${avgLat}</td>
+      <td style="color:${parseFloat(maxLat)>500?'var(--R)':parseFloat(maxLat)>200?'var(--Y)':'var(--tx)'};">${maxLat}</td>
+      <td style="color:${parseFloat(avgLoss)>5?'var(--R)':parseFloat(avgLoss)>1?'var(--Y)':'var(--tx)'};">${avgLoss}%</td>
+    </tr>`;
+  }).join('');
+
+  const summaryCard = document.createElement('div');
+  summaryCard.className = 'card';
+  summaryCard.innerHTML = `
+    <div class="ct">📋 Summary — Last ${hours}h</div>
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr>
+          <th>Host</th><th>Data Points</th><th>Uptime</th><th>Avg Latency</th><th>Max Latency</th><th>Avg Loss</th>
+        </tr></thead>
+        <tbody>${summaryRows}</tbody>
+      </table>
+    </div>`;
+  container.appendChild(summaryCard);
+
+  // Chart card
+  const chartCard = document.createElement('div');
+  chartCard.className = 'card';
+  chartCard.innerHTML = `
+    <div class="ct">📈 Latency Over Time</div>
+    <div class="cw" style="height:280px;"><canvas id="c-analysis"></canvas></div>`;
+  container.appendChild(chartCard);
+
+  // Loss chart card
+  const lossCard = document.createElement('div');
+  lossCard.className = 'card';
+  lossCard.innerHTML = `
+    <div class="ct">📦 Packet Loss Over Time</div>
+    <div class="cw" style="height:200px;"><canvas id="c-analysis-loss"></canvas></div>`;
+  container.appendChild(lossCard);
+
+  // Raw data table
+  if (ids.length === 1) {
+    const [id] = ids;
+    const hd = data[id];
+    const tableCard = document.createElement('div');
+    tableCard.className = 'card';
+    const rows = hd.data.slice(-200).reverse().map(r => `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:9px;">${fmtT(r.timestamp)}</td>
+      <td><span class="sev ${r.status==='online'?'info':'critical'}">${r.status}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;">${r.latency_ms != null ? r.latency_ms.toFixed(1) : '—'}</td>
+      <td style="color:${(r.packet_loss||0)>5?'var(--R)':'var(--tx)'};">${(r.packet_loss||0).toFixed(1)}%</td>
+      <td>${r.jitter_ms != null ? r.jitter_ms.toFixed(1) : '—'}</td>
+    </tr>`).join('');
+    tableCard.innerHTML = `
+      <div class="ct">🗃 Raw Records (last 200) — ${esc(hd.name)}</div>
+      <div style="overflow-x:auto;max-height:320px;overflow-y:auto;">
+        <table class="tbl">
+          <thead><tr><th>Timestamp</th><th>Status</th><th>Latency ms</th><th>Loss</th><th>Jitter ms</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    container.appendChild(tableCard);
+  }
+
+  // Show export button
+  $('an-export-btn').style.display = '';
+
+  // Build charts
+  await new Promise(r => setTimeout(r, 50)); // let DOM settle
+  const colors     = ['#00c8ff','#7b5cff','#00e676','#ffc107','#ff6d00','#ff4081'];
+  const colorAlphas= ['rgba(0,200,255','rgba(123,92,255','rgba(0,230,118','rgba(255,193,7','rgba(255,109,0','rgba(255,64,129'];
+  const entries = Object.entries(data);
+
+  // PRTG-style Latency chart — stacked filled areas
+  if ($('c-analysis')) {
+    const allTs = [...new Set(entries.flatMap(([,hd]) => hd.data.map(r => r.timestamp)))].sort();
+    const analysisCtx = $('c-analysis').getContext('2d');
+
+    const latDatasets = entries.map(([id, hd], i) => {
+      const byTs = {};
+      hd.data.forEach(r => { byTs[r.timestamp] = r.latency_ms; });
+      const grad = analysisCtx.createLinearGradient(0,0,0,280);
+      const ca = colorAlphas[i % colorAlphas.length];
+      grad.addColorStop(0, ca+',0.45)');
+      grad.addColorStop(0.65, ca+',0.12)');
+      grad.addColorStop(1, ca+',0.01)');
+      return {
+        label: hd.name || hd.ip,
+        data: allTs.map(ts => byTs[ts] ?? null),
+        borderColor: colors[i % colors.length],
+        backgroundColor: grad,
+        tension: 0.35, fill: true, pointRadius: 0, pointHoverRadius:4,
+        borderWidth: 2, spanGaps: true
+      };
+    });
+    try {
+      new Chart(analysisCtx, {
+        type: 'line',
+        data: {
+          labels: allTs.map(ts => { const d=new Date(ts); return (d.getMonth()+1)+'/'+d.getDate()+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }),
+          datasets: latDatasets
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false, animation:{duration:400,easing:'easeInOutQuart'},
+          interaction:{mode:'index',intersect:false},
+          plugins:{
+            legend:{ position:'bottom', labels:{color:'#6888aa',font:{family:"'JetBrains Mono',monospace",size:10},boxWidth:14,boxHeight:3,padding:12}},
+            tooltip:{backgroundColor:'#0a1220',borderColor:'#1e3050',borderWidth:1,titleColor:'#deeeff',bodyColor:'#6888aa',padding:10}
+          },
+          scales:{
+            x:{grid:{color:'rgba(23,32,53,0.5)'},border:{color:'#172035'},ticks:{color:'#6888aa',font:{size:8},maxTicksLimit:14,maxRotation:0}},
+            y:{grid:{color:'rgba(23,32,53,0.7)'},border:{color:'#172035'},ticks:{color:'#6888aa',font:{size:9},callback:v=>v+' ms'},title:{display:true,text:'Latency (ms)',color:'#6888aa',font:{size:10}},min:0}
+          }
+        }
+      });
+    } catch(e) { console.error('Analysis latency chart:', e); }
+  }
+
+  // PRTG-style Loss chart — stacked filled areas
+  if ($('c-analysis-loss')) {
+    const allTs = [...new Set(entries.flatMap(([,hd]) => hd.data.map(r => r.timestamp)))].sort();
+    const lossCtx = $('c-analysis-loss').getContext('2d');
+
+    const lossDatasets = entries.map(([id, hd], i) => {
+      const byTs = {};
+      hd.data.forEach(r => { byTs[r.timestamp] = r.packet_loss ?? 0; });
+      const grad = lossCtx.createLinearGradient(0,0,0,200);
+      const ca = colorAlphas[i % colorAlphas.length];
+      grad.addColorStop(0, ca+',0.40)');
+      grad.addColorStop(0.7, ca+',0.10)');
+      grad.addColorStop(1, ca+',0.01)');
+      return {
+        label: hd.name || hd.ip,
+        data: allTs.map(ts => byTs[ts] ?? null),
+        borderColor: colors[i % colors.length],
+        backgroundColor: grad,
+        tension: 0.25, fill: true, pointRadius: 0, pointHoverRadius:3,
+        borderWidth: 1.5, spanGaps: true
+      };
+    });
+    try {
+      new Chart(lossCtx, {
+        type: 'line',
+        data: {
+          labels: allTs.map(ts => { const d=new Date(ts); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }),
+          datasets: lossDatasets
+        },
+        options: {
+          responsive:true, maintainAspectRatio:false, animation:{duration:400,easing:'easeInOutQuart'},
+          interaction:{mode:'index',intersect:false},
+          plugins:{
+            legend:{ position:'bottom', labels:{color:'#6888aa',font:{family:"'JetBrains Mono',monospace",size:10},boxWidth:14,boxHeight:3,padding:12}},
+            tooltip:{backgroundColor:'#0a1220',borderColor:'#1e3050',borderWidth:1,titleColor:'#deeeff',bodyColor:'#6888aa',padding:10}
+          },
+          scales:{
+            x:{grid:{color:'rgba(23,32,53,0.5)'},border:{color:'#172035'},ticks:{color:'#6888aa',font:{size:8},maxTicksLimit:14,maxRotation:0}},
+            y:{grid:{color:'rgba(23,32,53,0.7)'},border:{color:'#172035'},ticks:{color:'#6888aa',font:{size:9},callback:v=>v+'%'},title:{display:true,text:'Loss (%)',color:'#6888aa',font:{size:10}},min:0,max:100}
+          }
+        }
+      });
+    } catch(e) { console.error('Analysis loss chart:', e); }
+  }
+}
+
+function exportAnalysisCSV() {
+  if (!_analysisData) return;
+  const rows = [['host_name','ip','timestamp','status','latency_ms','packet_loss','jitter_ms']];
+  for (const [, hd] of Object.entries(_analysisData)) {
+    for (const r of hd.data) {
+      rows.push([hd.name, hd.ip, r.timestamp, r.status, r.latency_ms??'', r.packet_loss??'', r.jitter_ms??'']);
+    }
+  }
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `abayonet_history_${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+2026-06-24 11:25:07,317 [INFO] === AbayoNet Enterprise v6.0.0 ===
+2026-06-24 11:25:07,461 [INFO] AbayoNet v6.0.0 database ready
+2026-06-24 11:25:07,463 [INFO] Monitor: Google DNS (8.8.8.8) every 30s
+2026-06-24 11:25:07,463 [INFO] Monitor: Cloudflare DNS (1.1.1.1) every 30s
+2026-06-24 11:25:07,465 [INFO] Monitor: Google DNS 2 (8.8.4.4) every 30s
+2026-06-24 11:25:07,466 [INFO] Monitoring 3 hosts
+2026-06-24 11:25:07,488 [INFO] Dashboard → http://127.0.0.1:8780  (local)
+2026-06-24 11:25:07,488 [INFO] Network   → http://172.16.3.253:8780  (LAN / remote — share this IP with others)
+2026-06-24 11:25:07,489 [INFO] All network interfaces are now listening on port 8780
+2026-06-24 11:25:07,718 [INFO] Cleanup: aggregated 0 hours → hourly table, -0 old hourly, -0 port, -0 http, -0 alerts (retention=30d)
+2026-06-24 11:25:15,267 [INFO] Login: admin (admin) from 127.0.0.1
+2026-06-24 11:25:31,427 [ERROR] GET /api/alerts/stats: invalid literal for int() with base 10: 'stats'
+2026-06-24 11:25:53,780 [INFO] Monitor: Saka (197.234.57.98) every 30s
+2026-06-24 11:25:53,784 [INFO] Monitor: Yenago-Bayelsa (102.222.118.234) every 30s
+2026-06-24 11:25:53,791 [INFO] Monitor: Ajose (197.242.240.130) every 30s
+2026-06-24 11:25:53,827 [INFO] Monitor: Gbagada (197.234.39.218) every 30s
+2026-06-24 11:25:53,845 [INFO] Monitor: Yaba (197.234.39.133) every 30s
+2026-06-24 11:25:53,852 [INFO] Monitor: Ogudu (197.242.252.105) every 30s
+2026-06-24 11:25:53,854 [INFO] Monitor: Egbeda (197.234.39.129) every 30s
+2026-06-24 11:25:53,855 [INFO] Monitor: Aromire (197.234.39.17) every 30s
+2026-06-24 11:25:53,857 [INFO] Monitor: Freedom-Way (197.234.58.114) every 30s
+2026-06-24 11:25:53,857 [INFO] Monitor: Benin-Sapele (102.222.116.58) every 30s
+2026-06-24 11:25:53,858 [INFO] Monitor: Ikotun (197.234.39.157) every 30s
+2026-06-24 11:25:53,859 [INFO] Monitor: Sawmill-Ikorodu (197.234.52.29) every 30s
+2026-06-24 11:25:53,860 [INFO] Monitor: Awoyaya (197.234.39.90) every 30s
+2026-06-24 11:25:53,861 [INFO] Monitor: Admiralty2 (197.242.240.122) every 30s
+2026-06-24 11:25:53,861 [INFO] Monitor: Idimu (197.234.39.49) every 30s
+2026-06-24 11:25:53,862 [INFO] Monitor: Jakande (197.234.58.66) every 30s
+2026-06-24 11:25:53,863 [INFO] Monitor: Sangotedo (197.234.39.61) every 30s
+2026-06-24 11:25:53,864 [INFO] Monitor: Oko Oba (197.234.39.29) every 30s
+2026-06-24 11:25:53,864 [INFO] Monitor: Magodo (197.234.39.97) every 30s
+2026-06-24 11:25:53,865 [INFO] Monitor: Badore (197.234.52.189) every 30s
+2026-06-24 11:25:53,866 [INFO] Monitor: Ajao (197.234.39.37) every 30s
+2026-06-24 11:25:53,867 [INFO] Monitor: Festac (197.234.39.245) every 30s
+2026-06-24 11:25:53,867 [INFO] Monitor: Toyin (197.234.39.241) every 30s
+2026-06-24 11:25:53,868 [INFO] Monitor: Maryland (197.234.39.213) every 30s
+2026-06-24 11:25:53,869 [INFO] Monitor: Apapa (197.234.39.249) every 30s
+2026-06-24 11:25:53,869 [INFO] Monitor: Wuse 2 (197.234.48.142) every 30s
+2026-06-24 11:25:53,870 [INFO] Monitor: Ilupeju (197.234.39.153) every 30s
+2026-06-24 11:25:53,871 [INFO] Monitor: Abeokuta (102.222.116.70) every 30s
+2026-06-24 11:25:53,872 [INFO] Monitor: Itire (197.234.52.53) every 30s
+2026-06-24 11:25:53,873 [INFO] Monitor: Polo Park (102.222.116.74) every 30s
+2026-06-24 11:25:53,873 [INFO] Monitor: Akure (102.222.116.42) every 30s
+2026-06-24 11:25:53,874 [INFO] Monitor: Calabar (102.222.116.62) every 30s
+2026-06-24 11:25:53,875 [INFO] Monitor: Ugbowo (102.222.116.54) every 30s
+2026-06-24 11:25:53,875 [INFO] Monitor: Nyanya (41.203.87.146) every 30s
+2026-06-24 11:25:53,876 [INFO] Monitor: Ilorin-Kwara (102.222.116.122) every 30s
+2026-06-24 11:25:53,877 [INFO] Monitor: Okota (197.234.39.102) every 30s
+2026-06-24 11:25:53,878 [INFO] Monitor: Prime-Mall (197.234.58.94) every 30s
+2026-06-24 11:25:53,880 [INFO] Monitor: Ikorodu (172.71.180.11) every 30s
+2026-06-24 11:25:53,881 [INFO] Monitor: Ikota (197.234.58.98) every 30s
+2026-06-24 11:25:53,882 [INFO] Monitor: Satelite (197.234.52.25) every 30s
+2026-06-24 11:25:53,883 [INFO] Monitor: Ring-Road (102.222.116.182) every 30s
+2026-06-24 11:25:53,883 [INFO] Monitor: Bodija (102.222.116.174) every 30s
+2026-06-24 11:25:53,884 [INFO] Monitor: Gateway-Mall (102.222.117.186) every 30s
+2026-06-24 11:25:53,885 [INFO] Monitor: Apo-Mall (102.222.116.142) every 30s
+2026-06-24 11:25:53,890 [INFO] Monitor: Warri (102.222.117.146) every 30s
+2026-06-24 11:25:53,892 [INFO] Monitor: Choba (102.222.116.178) every 30s
+2026-06-24 11:25:53,904 [INFO] Monitor: Minna (102.222.117.142) every 30s
+2026-06-24 11:25:53,905 [INFO] Monitor: Ali-Akilu (102.222.116.226) every 30s
+2026-06-24 11:25:53,911 [INFO] Monitor: Jabi (102.222.116.92) every 30s
+2026-06-24 11:25:53,939 [INFO] Monitor: Bompai (197.234.36.46) every 30s
+2026-06-24 11:25:54,010 [INFO] Monitor: Ogunnaike (197.234.39.229) every 30s
+2026-06-24 11:25:54,057 [INFO] Monitor: Admiralty 1 (197.234.58.102) every 30s
+2026-06-24 11:25:54,108 [INFO] Monitor: Agidingbi (197.242.252.45) every 30s
+2026-06-24 11:25:54,125 [INFO] Monitor: Iju (172.20.180.75) every 30s
+2026-06-24 11:25:54,139 [INFO] Monitor: Ikoyi (172.71.180.42) every 30s
+2026-06-24 11:25:54,145 [INFO] Monitor: Kubwa (102.222.117.246) every 30s
+2026-06-24 11:25:54,161 [INFO] Monitor: ShellGate (105.112.252.187) every 30s
+2026-06-24 11:25:54,212 [INFO] Monitor: PeterOdili (102.222.117.130) every 30s
+2026-06-24 11:25:54,268 [INFO] Monitor: Asaba (102.222.117.150) every 30s
+2026-06-24 11:25:54,339 [INFO] Monitor: Ota (102.222.119.202) every 30s
+2026-06-24 11:25:54,340 [INFO] Monitor: Agungi (197.234.58.254) every 30s
+2026-06-24 11:25:54,394 [INFO] Monitor: Challenge (102.222.116.46) every 30s
+2026-06-24 11:25:54,399 [INFO] Monitor: Awka (102.222.117.190) every 30s
+2026-06-24 11:25:54,410 [INFO] Monitor: BodeThos(Suru-Coollink) (197.234.61.66) every 30s
+2026-06-24 11:25:54,418 [INFO] Monitor: Barnawa (102.222.116.50) every 30s
+2026-06-24 11:25:54,426 [INFO] Monitor: Uyo (102.222.116.66) every 30s
+2026-06-24 11:25:54,437 [INFO] Monitor: Jara Mall (197.242.252.102) every 30s
+2026-06-24 11:25:54,445 [INFO] Monitor: Lasu-Coollink (197.234.41.146) every 30s
+2026-06-24 11:25:54,455 [INFO] Monitor: Commisary-Magboro (197.242.249.146) every 30s
+2026-06-24 11:25:54,457 [INFO] Monitor: Akobo (102.222.117.34) every 30s
+2026-06-24 11:25:54,465 [INFO] Monitor: GRA PH1 (Olu Obasanjo) (197.242.243.162) every 30s
+2026-06-24 11:25:54,473 [INFO] Monitor: Mowe (102.222.117.98) every 30s
+2026-06-24 11:25:54,482 [INFO] Monitor: Jos (102.222.117.178) every 30s
+2026-06-24 11:25:54,491 [INFO] Monitor: Onisha (129.205.127.166) every 30s
+2026-06-24 11:25:54,503 [INFO] Monitor: Garki (102.222.118.250) every 30s
+2026-06-24 11:25:54,506 [INFO] Monitor: Abiola-way (102.222.118.254) every 30s
+2026-06-24 11:25:54,508 [INFO] Monitor: Owerri (102.222.116.82) every 30s
+2026-06-24 11:25:54,524 [INFO] Monitor: Aba (102.222.118.238) every 30s
+2026-06-24 11:25:54,533 [INFO] Monitor: Lasu-TechPoint (197.211.45.164) every 30s
+2026-06-24 11:25:54,537 [INFO] Monitor: Palm Mall(Ibadan-mall) (102.222.116.169) every 30s
+2026-06-24 11:25:54,545 [INFO] Monitor: Gwarimpa-New (102.222.117.74) every 30s
+2026-06-24 11:25:54,552 [INFO] Monitor: Ether3 Idejo (4th Floor) (197.234.57.74) every 30s
+2026-06-24 11:25:54,564 [INFO] Monitor: Connoil-Chevron (197.234.58.90) every 30s
+2026-06-24 11:25:54,572 [INFO] Monitor: Bode(Surulere-techpoint) (102.222.118.14) every 30s
+2026-06-24 11:25:57,858 [WARNING] ALERT [warning]: ⚡ High latency on Lasu-Coollink (197.234.41.146): 371.8ms > 200.0ms
+2026-06-24 11:26:00,608 [WARNING] ALERT [critical]: 🔴 Gbagada (197.234.39.218) is OFFLINE
+2026-06-24 11:26:01,112 [WARNING] ALERT [critical]: 🔴 BodeThos(Suru-Coollink) (197.234.61.66) is OFFLINE
+2026-06-24 11:26:01,114 [WARNING] ALERT [critical]: 🔴 Uyo (102.222.116.66) is OFFLINE
+2026-06-24 11:26:01,117 [WARNING] ALERT [critical]: 🔴 Ikorodu (172.71.180.11) is OFFLINE
+2026-06-24 11:26:01,118 [WARNING] ALERT [critical]: 🔴 Ikoyi (172.71.180.42) is OFFLINE
+2026-06-24 11:26:01,119 [WARNING] ALERT [critical]: 🔴 Itire (197.234.52.53) is OFFLINE
+2026-06-24 11:26:01,121 [WARNING] ALERT [critical]: 🔴 Mowe (102.222.117.98) is OFFLINE
+2026-06-24 11:26:01,122 [WARNING] ALERT [critical]: 🔴 Ether3 Idejo (4th Floor) (197.234.57.74) is OFFLINE
+2026-06-24 11:26:19,838 [ERROR] GET /api/alerts/stats: invalid literal for int() with base 10: 'stats'
+2026-06-24 11:27:14,606 [INFO] Login: admin (admin) from 127.0.0.1
+2026-06-24 11:27:40,140 [INFO] User created: itsupport (readonly) by admin
+2026-06-24 11:28:00,740 [INFO] Login: itsupport (readonly) from 172.16.0.154
+2026-06-24 11:28:29,258 [ERROR] GET /api/alerts/stats: invalid literal for int() with base 10: 'stats'
+2026-06-24 11:52:34,199 [ERROR] GET /api/alerts/stats: invalid literal for int() with base 10: 'stats'
+2026-06-24 17:25:09,694 [INFO] Cleanup: aggregated 0 hours → hourly table, -0 old hourly, -0 port, -0 http, -0 alerts (retention=30d)
+2026-06-24 23:25:11,574 [INFO] Cleanup: aggregated 0 hours → hourly table, -0 old hourly, -0 port, -0 http, -0 alerts (retention=30d)
