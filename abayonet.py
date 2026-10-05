@@ -1145,10 +1145,10 @@ def rollup_pings():
                 db = get_db()
                 # Raw → Hourly (7 to 30 days old)
                 db.execute("""
-                    INSERT OR IGNORE INTO ping_hourly
+                    INSERT IGNORE INTO ping_hourly
                         (host_id,hour_ts,total,online,avg_latency,min_latency,max_latency,avg_loss,avg_jitter)
                     SELECT host_id,
-                        DATE_FORMAT(timestamp,'%Y-%m-%d %H:00:00') AS hour_ts,
+                        DATE_FORMAT(timestamp,'%%Y-%%m-%%d %%H:00:00') AS hour_ts,
                         COUNT(*),
                         SUM(CASE WHEN status='online' THEN 1 ELSE 0 END),
                         AVG(latency_ms),MIN(latency_ms),MAX(latency_ms),
@@ -1159,10 +1159,10 @@ def rollup_pings():
 
                 # Hourly → Daily (>30 days old)
                 db.execute("""
-                    INSERT OR IGNORE INTO ping_daily
+                    INSERT IGNORE INTO ping_daily
                         (host_id,day_ts,total,online,avg_latency,min_latency,max_latency,avg_loss,avg_jitter)
                     SELECT host_id,
-                        DATE_FORMAT(hour_ts,'%Y-%m-%d') AS day_ts,
+                        DATE_FORMAT(hour_ts,'%%Y-%%m-%%d') AS day_ts,
                         SUM(total),SUM(online),
                         AVG(avg_latency),MIN(min_latency),MAX(max_latency),
                         AVG(avg_loss),AVG(avg_jitter)
