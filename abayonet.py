@@ -1945,6 +1945,9 @@ class H(BaseHTTPRequestHandler):
             log.error(f'GET {path}: {e}')
             try: self.json({'error': 'Internal server error — please try again'}, 500)
             except Exception: pass
+        finally:
+            # CRITICAL: Close DB connection after each request to prevent connection leaks
+            close_thread_db()
 
     def do_POST(self):
         path=urlparse(self.path).path
@@ -2160,6 +2163,9 @@ class H(BaseHTTPRequestHandler):
             log.error(f'POST {path}: {e}')
             try: self.json({'error': 'Internal server error — please try again'}, 500)
             except Exception: pass
+        finally:
+            # CRITICAL: Close DB connection after each request to prevent connection leaks
+            close_thread_db()
 
     def do_DELETE(self):
         path=urlparse(self.path).path
@@ -2197,6 +2203,9 @@ class H(BaseHTTPRequestHandler):
         except Exception as e:
             log.error(f'DELETE {path}: {e}')
             self.json({'error':'Internal server error — please try again'},500)
+        finally:
+            # CRITICAL: Close DB connection after each request to prevent connection leaks
+            close_thread_db()
 
 _t0=time.time()
 
