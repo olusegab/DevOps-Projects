@@ -893,15 +893,29 @@ def start_all():
                 _report_cache    = result
                 _report_cache_ts = datetime.now()
         log.info(f'Report cache warmed: {len(result)} hosts ready')
-    # TEMPORARILY DISABLED: Report cache causes extreme slowness on 2.5M+ row tables
-    # Re-enable after data retention cleanup completes
-    # threading.Thread(target=_warm, daemon=True, name='cache-warmup').start()
-    # threading.Thread(target=_refresh_report_cache_bg,
-    #                  daemon=True, name='report-cache').start()
+    # Warm report cache immediately in background — so first page load is instant
+    # even if the 5-minute refresh cycle hasn't fired yet
+    # NOW SMART: Only runs if table size is manageable
+    def _warm():
+        global _report_cache, _report_cache_ts
+        if check_performance_mode() == 'fast':
+            result = _build_report_cache()
+            with _report_cache_lock:
+                if result:
+                    _report_cache    = result
+                    _report_cache_ts = datetime.now()
+            log.info(f'Report cache warmed: {len(result)} hosts ready')
+        else:
+            log.info('Report cache warmup skipped (waiting for data cleanup to complete)')
+    threading.Thread(target=_warm, daemon=True, name='cache-warmup').start()
+    
+    # Background 5-minute refresh cycle (smart - adapts to table size)
+    threading.Thread(target=_refresh_report_cache_bg,
+                     daemon=True, name='report-cache').start()
     
     # Watchdog — restarts dead/stalled monitor threads every 60s
     threading.Thread(target=_monitor_watchdog, daemon=True, name='watchdog').start()
-    log.info('Monitoring started (report cache disabled temporarily for performance)')
+    log.info('Cache warmup, report-cache refresh, and watchdog started (adaptive mode)')
 
 def _monitor_watchdog():
     """
@@ -1101,6 +1115,45 @@ def get_stats(host_id, hours):
             'p95_latency':round(p95,2) if p95 else None,
             'p99_latency':round(p99,2) if p99 else None}
 
+# ── ADAPTIVE PERFORMANCE CONTROL ────────────────────────────────
+# Automatically enables/disables expensive features based on table size
+_performance_mode = None  # 'fast' or 'slow' - determined at runtime
+_last_perf_check = None
+_PERF_CHECK_INTERVAL = 300  # Check every 5 minutes
+
+def check_performance_mode():
+    """
+    Determines if expensive queries (report cache, uptime calcs) should run.
+    Returns 'fast' if ping_results < 1M rows, 'slow' otherwise.
+    Caches result for 5 minutes to avoid constant DB checks.
+    """
+    global _performance_mode, _last_perf_check
+    
+    now = datetime.now()
+    if _last_perf_check and (now - _last_perf_check).total_seconds() < _PERF_CHECK_INTERVAL:
+        return _performance_mode
+    
+    try:
+        # Quick count using table stats (doesn't scan the table)
+        result = db_one(
+            "SELECT TABLE_ROWS FROM information_schema.TABLES "
+            "WHERE TABLE_SCHEMA='abayonetDB' AND TABLE_NAME='ping_results'")
+        row_count = result['TABLE_ROWS'] if result else 0
+        
+        # Fast mode if under 1M rows (cleanup completed)
+        old_mode = _performance_mode
+        _performance_mode = 'fast' if row_count < 1000000 else 'slow'
+        _last_perf_check = now
+        
+        if old_mode != _performance_mode:
+            log.info(f'Performance mode switched to {_performance_mode} '
+                    f'(ping_results: {row_count:,} rows)')
+        
+        return _performance_mode
+    except Exception as e:
+        log.error(f'Performance check failed: {e}')
+        return 'slow'  # Safe default
+
 # ── REPORT CACHE ─────────────────────────────────────────────────
 # Cache is rebuilt in a background thread every 5 minutes.
 # API calls return instantly from cache — no live DB scan on page load.
@@ -1233,11 +1286,15 @@ def _refresh_report_cache_bg():
     """Background thread: rebuild cache every 5 minutes."""
     global _report_cache, _report_cache_ts
     while _running:
-        result = _build_report_cache()
-        with _report_cache_lock:
-            if result:
-                _report_cache    = result
-                _report_cache_ts = datetime.now()
+        # Only rebuild if in fast mode (data cleanup completed)
+        if check_performance_mode() == 'fast':
+            result = _build_report_cache()
+            with _report_cache_lock:
+                if result:
+                    _report_cache    = result
+                    _report_cache_ts = datetime.now()
+        else:
+            log.info('Report cache skipped (slow mode - waiting for data cleanup)')
         time.sleep(_CACHE_TTL_SECS)
 
 def get_report(days=30):
@@ -1689,17 +1746,20 @@ class H(BaseHTTPRequestHandler):
                 # ONE join query for all current statuses — no per-host loop
                 status_map = {r['host_id']: dict(r) for r in db_all(
                     'SELECT * FROM host_status')}
-                # ONE bulk uptime query using cover index
-                # NOTE: no CAST needed here — unlike SQLite, MySQL's `/` operator
-                # already produces a decimal result for integer operands, so the
-                # old CAST(... AS REAL) (not a valid MySQL type; would error) is
-                # dropped rather than translated.
-                uptime_rows = db_all(
-                    "SELECT host_id, "
-                    "SUM(CASE WHEN status='online' THEN 1 ELSE 0 END)"
-                    "/GREATEST(COUNT(*),1)*100 AS up "
-                    "FROM ping_results WHERE timestamp>? GROUP BY host_id", (since_24h,))
-                uptime_map = {r['host_id']: round(r['up'] or 0, 2) for r in uptime_rows}
+                
+                # Smart uptime calculation - only if table is small enough
+                if check_performance_mode() == 'fast':
+                    uptime_rows = db_all(
+                        "SELECT host_id, "
+                        "SUM(CASE WHEN status='online' THEN 1 ELSE 0 END)"
+                        "/GREATEST(COUNT(*),1)*100 AS up "
+                        "FROM ping_results WHERE timestamp>? GROUP BY host_id", (since_24h,))
+                    uptime_map = {r['host_id']: round(r['up'] or 0, 2) for r in uptime_rows}
+                else:
+                    # Use fast approximation from host_status when table is too large
+                    uptime_map = {s['host_id']: 99.9 if s['status'] == 'online' else 0.0 
+                                  for s in status_map.values()}
+                
                 for h in hosts:
                     hid = h['id']
                     s = status_map.get(hid, {})
