@@ -972,7 +972,7 @@ def rollup_pings():
                     INSERT OR IGNORE INTO ping_hourly
                         (host_id,hour_ts,total,online,avg_latency,min_latency,max_latency,avg_loss,avg_jitter)
                     SELECT host_id,
-                        DATE_FORMAT(timestamp,'%Y-%m-%d %H:00:00') AS hour_ts,
+                        DATE_FORMAT(timestamp,'%%Y-%%m-%%d %%H:00:00') AS hour_ts,
                         COUNT(*),
                         SUM(CASE WHEN status='online' THEN 1 ELSE 0 END),
                         AVG(latency_ms),MIN(latency_ms),MAX(latency_ms),
@@ -986,7 +986,7 @@ def rollup_pings():
                     INSERT OR IGNORE INTO ping_daily
                         (host_id,day_ts,total,online,avg_latency,min_latency,max_latency,avg_loss,avg_jitter)
                     SELECT host_id,
-                        DATE_FORMAT(hour_ts,'%Y-%m-%d') AS day_ts,
+                        DATE_FORMAT(hour_ts,'%%Y-%%m-%%d') AS day_ts,
                         SUM(total),SUM(online),
                         AVG(avg_latency),MIN(min_latency),MAX(max_latency),
                         AVG(avg_loss),AVG(avg_jitter)
@@ -1717,6 +1717,20 @@ class H(BaseHTTPRequestHandler):
                 h['in_maintenance'] = in_maintenance(hid)
                 self.json(h); return
 
+            # MULTI-HOST HISTORY (for analysis page) - MUST come before generic /history check
+            if path=='/api/history/multi':
+                ids_raw=qp('ids',''); hours=int(qp('hours','24'))
+                ids=[int(x) for x in ids_raw.split(',') if x.strip().isdigit()]
+                if not ids: self.json([]); return
+                since=utc_since_str(hours=hours)
+                out={}
+                for hid in ids:
+                    h=db_one('SELECT name,ip FROM hosts WHERE id=?',(hid,))
+                    if not h: continue
+                    rows=db_all('SELECT timestamp,status,latency_ms,packet_loss,jitter_ms FROM ping_results WHERE host_id=? AND timestamp>? ORDER BY timestamp ASC',(hid,since))
+                    out[hid]={'name':h['name'],'ip':h['ip'],'data':[dict(r) for r in rows]}
+                self.json(out); return
+
             if '/history' in path:
                 hid=int(path.split('/')[3])
                 from_p=qp('from',''); to_p=qp('to','')
@@ -1897,20 +1911,6 @@ class H(BaseHTTPRequestHandler):
             if path=='/api/hosts/export/csv':
                 fname=f'abayonet_hosts_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
                 self.file_dl(export_csv_hosts(),'text/csv',fname); return
-
-            # MULTI-HOST HISTORY (for analysis page)
-            if path=='/api/history/multi':
-                ids_raw=qp('ids',''); hours=int(qp('hours','24'))
-                ids=[int(x) for x in ids_raw.split(',') if x.strip().isdigit()]
-                if not ids: self.json([]); return
-                since=utc_since_str(hours=hours)
-                out={}
-                for hid in ids:
-                    h=db_one('SELECT name,ip FROM hosts WHERE id=?',(hid,))
-                    if not h: continue
-                    rows=db_all('SELECT timestamp,status,latency_ms,packet_loss,jitter_ms FROM ping_results WHERE host_id=? AND timestamp>? ORDER BY timestamp ASC',(hid,since))
-                    out[hid]={'name':h['name'],'ip':h['ip'],'data':[dict(r) for r in rows]}
-                self.json(out); return
 
             # TRACEROUTE
             if path.startswith('/api/traceroute/'):
