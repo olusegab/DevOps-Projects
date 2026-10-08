@@ -1700,9 +1700,17 @@ class H(BaseHTTPRequestHandler):
                 online  = db_one("SELECT COUNT(*) FROM host_status WHERE status='online'")[0]
                 offline = db_one("SELECT COUNT(*) FROM host_status WHERE status='offline'")[0]
                 unack   = db_one('SELECT COUNT(*) FROM alerts WHERE acknowledged=0')[0]
+                
+                # Smart query - only if table is small
                 since_1h = utc_since_str(hours=1)
-                avg_lat  = db_one("SELECT ROUND(AVG(latency_ms),2) FROM ping_results WHERE timestamp>? AND status='online'",(since_1h,))[0]
-                avg_loss = db_one("SELECT ROUND(AVG(packet_loss),2) FROM ping_results WHERE timestamp>?",(since_1h,))[0]
+                if check_performance_mode() == 'fast':
+                    avg_lat  = db_one("SELECT ROUND(AVG(latency_ms),2) FROM ping_results WHERE timestamp>? AND status='online'",(since_1h,))[0]
+                    avg_loss = db_one("SELECT ROUND(AVG(packet_loss),2) FROM ping_results WHERE timestamp>?",(since_1h,))[0]
+                else:
+                    # Use host_status for fast approximation
+                    avg_lat  = db_one("SELECT ROUND(AVG(latency_ms),2) FROM host_status WHERE status='online'")[0]
+                    avg_loss = db_one("SELECT ROUND(AVG(packet_loss),2) FROM host_status")[0]
+                
                 degraded = db_one("SELECT COUNT(*) FROM host_status WHERE packet_loss>5")[0]
                 self.json({'total':total,'online':online,'offline':offline,
                     'unknown':max(0,total-online-offline),
@@ -1711,6 +1719,10 @@ class H(BaseHTTPRequestHandler):
 
             # DASHBOARD CHART — single query for top-6 hosts with most recent data
             if path=='/api/dashboard/chart':
+                # Skip expensive chart query in slow mode
+                if check_performance_mode() == 'slow':
+                    self.json([]); return
+                    
                 since_1h = utc_since_str(hours=1)
                 active = db_all(
                     "SELECT p.host_id, h.name, h.ip "
