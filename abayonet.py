@@ -893,13 +893,15 @@ def start_all():
                 _report_cache    = result
                 _report_cache_ts = datetime.now()
         log.info(f'Report cache warmed: {len(result)} hosts ready')
-    threading.Thread(target=_warm, daemon=True, name='cache-warmup').start()
-    # Background 5-minute refresh cycle
-    threading.Thread(target=_refresh_report_cache_bg,
-                     daemon=True, name='report-cache').start()
+    # TEMPORARILY DISABLED: Report cache causes extreme slowness on 2.5M+ row tables
+    # Re-enable after data retention cleanup completes
+    # threading.Thread(target=_warm, daemon=True, name='cache-warmup').start()
+    # threading.Thread(target=_refresh_report_cache_bg,
+    #                  daemon=True, name='report-cache').start()
+    
     # Watchdog — restarts dead/stalled monitor threads every 60s
     threading.Thread(target=_monitor_watchdog, daemon=True, name='watchdog').start()
-    log.info('Cache warmup, report-cache refresh, and watchdog started')
+    log.info('Monitoring started (report cache disabled temporarily for performance)')
 
 def _monitor_watchdog():
     """
@@ -968,8 +970,9 @@ def rollup_pings():
             try:
                 db = get_db()
                 # Raw → Hourly (7 to 30 days old)
+                # MySQL: INSERT IGNORE instead of INSERT OR IGNORE
                 db.execute("""
-                    INSERT OR IGNORE INTO ping_hourly
+                    INSERT IGNORE INTO ping_hourly
                         (host_id,hour_ts,total,online,avg_latency,min_latency,max_latency,avg_loss,avg_jitter)
                     SELECT host_id,
                         DATE_FORMAT(timestamp,'%%Y-%%m-%%d %%H:00:00') AS hour_ts,
@@ -983,7 +986,7 @@ def rollup_pings():
 
                 # Hourly → Daily (>30 days old)
                 db.execute("""
-                    INSERT OR IGNORE INTO ping_daily
+                    INSERT IGNORE INTO ping_daily
                         (host_id,day_ts,total,online,avg_latency,min_latency,max_latency,avg_loss,avg_jitter)
                     SELECT host_id,
                         DATE_FORMAT(hour_ts,'%%Y-%%m-%%d') AS day_ts,
@@ -996,14 +999,18 @@ def rollup_pings():
 
                 db.commit()
 
-                # Delete old raw pings for this host
-                r = db.execute(
-                    'DELETE FROM ping_results WHERE host_id=? AND timestamp<? AND timestamp>=?',
-                    (hid, cutoff_raw, cutoff_keep))
-                db.commit()
-                total_archived += r.rowcount
-
-                time.sleep(0.02)   # brief yield — lets monitor threads get a turn
+                # Delete old raw pings for this host - small batches to avoid locks
+                batch_size = 10000
+                while True:
+                    r = db.execute(
+                        'DELETE FROM ping_results WHERE host_id=? AND timestamp<? LIMIT ?',
+                        (hid, cutoff_raw, batch_size))
+                    db.commit()
+                    deleted = r.rowcount
+                    total_archived += deleted
+                    if deleted < batch_size:
+                        break  # No more rows to delete
+                    time.sleep(0.1)  # Brief pause between batches
 
             except Exception as e:
                 log.error(f'Rollup error host {hid}: {e}')
