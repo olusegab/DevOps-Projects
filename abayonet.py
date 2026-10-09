@@ -18,11 +18,17 @@ from email.mime.multipart import MIMEMultipart
 
 # SNMP imports for bandwidth monitoring
 try:
-    from pysnmp.hlapi import *
+    from pysnmp.entity.rfc3413.oneliner import cmdgen
+    from pysnmp.proto.rfc1902 import Integer, IpAddress, OctetString
     SNMP_AVAILABLE = True
 except ImportError:
-    SNMP_AVAILABLE = False
-    # Will log warning after logger is set up
+    try:
+        # Try newer pysnmp API
+        from pysnmp.hlapi import *
+        SNMP_AVAILABLE = True
+    except ImportError:
+        SNMP_AVAILABLE = False
+        # Will log warning after logger is set up
 
 # ── Absolute base directory — works correctly whether run directly,
 #    as a Windows Service, or via systemd (cwd varies in all cases) ──
@@ -990,34 +996,43 @@ def snmp_discover_interfaces(ip, community='public', timeout=5):
     
     interfaces = []
     try:
-        # OIDs for interface discovery
-        OID_ifIndex = '1.3.6.1.2.1.2.2.1.1'
+        cmdGen = cmdgen.CommandGenerator()
+        
+        # OIDs for interface discovery  
         OID_ifDescr = '1.3.6.1.2.1.2.2.1.2'
         OID_ifSpeed = '1.3.6.1.2.1.2.2.1.5'
         
-        # Walk the interface table
-        for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
-            SnmpEngine(),
-            CommunityData(community),
-            UdpTransportTarget((ip, 161), timeout=timeout),
-            ContextData(),
-            ObjectType(ObjectIdentity(OID_ifIndex)),
-            ObjectType(ObjectIdentity(OID_ifDescr)),
-            ObjectType(ObjectIdentity(OID_ifSpeed)),
-            lexicographicMode=False
-        ):
-            if errorIndication or errorStatus:
-                break
-                
-            if_index = int(varBinds[0][1])
-            if_name = str(varBinds[1][1])
-            if_speed = int(varBinds[2][1])
+        errorIndication, errorStatus, errorIndex, varBindTable = cmdGen.nextCmd(
+            cmdgen.CommunityData(community),
+            cmdgen.UdpTransportTarget((ip, 161), timeout=timeout),
+            OID_ifDescr,
+            OID_ifSpeed
+        )
+        
+        if errorIndication or errorStatus:
+            log.error(f'SNMP walk error for {ip}: {errorIndication or errorStatus}')
+            return []
+        
+        for varBindTableRow in varBindTable:
+            if_index = None
+            if_name = None
+            if_speed = None
             
-            interfaces.append({
-                'if_index': if_index,
-                'if_name': if_name,
-                'if_speed_bps': if_speed
-            })
+            for oid, val in varBindTableRow:
+                oid_str = str(oid)
+                if OID_ifDescr in oid_str:
+                    if_index = int(oid_str.split('.')[-1])
+                    if_name = str(val)
+                elif OID_ifSpeed in oid_str:
+                    if_speed = int(val)
+            
+            if if_index and if_name:
+                interfaces.append({
+                    'if_index': if_index,
+                    'if_name': if_name,
+                    'if_speed_bps': if_speed or 1000000000
+                })
+                
     except Exception as e:
         log.error(f'SNMP discovery failed for {ip}: {e}')
     
@@ -1032,24 +1047,27 @@ def snmp_get_bandwidth(ip, if_index, community='public', timeout=5):
         return None
     
     try:
+        cmdGen = cmdgen.CommandGenerator()
+        
         OID_ifInOctets = f'1.3.6.1.2.1.2.2.1.10.{if_index}'
         OID_ifOutOctets = f'1.3.6.1.2.1.2.2.1.16.{if_index}'
         
-        errorIndication, errorStatus, errorIndex, varBinds = next(
-            getCmd(SnmpEngine(),
-                   CommunityData(community),
-                   UdpTransportTarget((ip, 161), timeout=timeout),
-                   ContextData(),
-                   ObjectType(ObjectIdentity(OID_ifInOctets)),
-                   ObjectType(ObjectIdentity(OID_ifOutOctets)))
+        errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(
+            cmdgen.CommunityData(community),
+            cmdgen.UdpTransportTarget((ip, 161), timeout=timeout),
+            OID_ifInOctets,
+            OID_ifOutOctets
         )
         
         if errorIndication or errorStatus:
             return None
         
+        in_octets = int(varBinds[0][1])
+        out_octets = int(varBinds[1][1])
+        
         return {
-            'in_octets': int(varBinds[0][1]),
-            'out_octets': int(varBinds[1][1])
+            'in_octets': in_octets,
+            'out_octets': out_octets
         }
     except Exception as e:
         log.debug(f'SNMP bandwidth query failed for {ip} if{if_index}: {e}')
