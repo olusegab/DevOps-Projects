@@ -851,8 +851,24 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
     <div class="card">
       <div class="ct">📊 Ping Results Stats</div>
       <div id="sys-ping-stats" style="font-size:11px;"></div>
+      
+      <!-- Cleanup Progress -->
+      <div id="sys-cleanup-progress" style="margin-top:12px;display:none;">
+        <div style="background:var(--bg3);padding:12px;border-radius:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;">Cleanup Progress</span>
+            <span id="cleanup-percent" style="font-size:14px;font-weight:700;color:var(--acc);">0%</span>
+          </div>
+          <div style="background:var(--bg2);height:8px;border-radius:4px;overflow:hidden;margin-bottom:6px;">
+            <div id="cleanup-bar" style="background:linear-gradient(90deg,var(--acc),var(--acc2));height:100%;width:0%;transition:width 0.3s;"></div>
+          </div>
+          <div id="cleanup-status" style="font-size:9px;color:var(--tx2);"></div>
+          <div id="cleanup-stats" style="font-size:9px;color:var(--tx3);margin-top:4px;"></div>
+        </div>
+      </div>
+      
       <div style="margin-top:12px;">
-        <button class="btn btnA" onclick="runCleanup()" style="width:100%;font-size:11px;">🧹 Run Cleanup Now</button>
+        <button class="btn btnA" id="cleanup-btn" onclick="runCleanup()" style="width:100%;font-size:11px;">🧹 Run Cleanup Now</button>
       </div>
     </div>
   </div>
@@ -3600,6 +3616,84 @@ async function loadSystemDashboard() {
   sysHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);">ACTIVE MONITORS</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${sys.active_monitors||0}</div></div>`;
   sysHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);">TOTAL HOSTS</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${sys.total_hosts||0}</div></div>`;
   $('sys-info').innerHTML = sysHTML;
+  
+  // Check cleanup status
+  updateCleanupStatus();
+}
+
+let _cleanupStatusTimer = null;
+
+async function updateCleanupStatus() {
+  const status = await G('/api/admin/cleanup/status');
+  if (!status) return;
+  
+  const progressDiv = $('sys-cleanup-progress');
+  const btn = $('cleanup-btn');
+  
+  if (status.running) {
+    // Show progress bar
+    progressDiv.style.display = 'block';
+    $('cleanup-percent').textContent = status.progress + '%';
+    $('cleanup-bar').style.width = status.progress + '%';
+    $('cleanup-status').textContent = status.current_step || 'Processing...';
+    
+    let statsText = '';
+    if (status.hosts_total > 0) {
+      statsText += `Hosts: ${status.hosts_processed}/${status.hosts_total} • `;
+    }
+    if (status.rows_deleted > 0) {
+      statsText += `Deleted: ${status.rows_deleted.toLocaleString()} rows`;
+    }
+    $('cleanup-stats').textContent = statsText;
+    
+    btn.disabled = true;
+    btn.textContent = '⏳ Cleanup Running...';
+    
+    // Poll every 2 seconds while running
+    if (!_cleanupStatusTimer) {
+      _cleanupStatusTimer = setInterval(updateCleanupStatus, 2000);
+    }
+  } else {
+    // Cleanup not running
+    if (_cleanupStatusTimer) {
+      clearInterval(_cleanupStatusTimer);
+      _cleanupStatusTimer = null;
+    }
+    
+    if (status.last_completed) {
+      // Show completed status briefly
+      progressDiv.style.display = 'block';
+      $('cleanup-percent').textContent = '100%';
+      $('cleanup-bar').style.width = '100%';
+      
+      if (status.error) {
+        $('cleanup-status').textContent = '❌ ' + status.error;
+        $('cleanup-bar').style.background = 'var(--R)';
+      } else {
+        $('cleanup-status').textContent = '✅ Cleanup completed successfully';
+        $('cleanup-bar').style.background = 'var(--G)';
+        
+        // Refresh system stats after cleanup
+        setTimeout(loadSystemDashboard, 2000);
+      }
+      
+      let statsText = '';
+      if (status.rows_deleted > 0) {
+        statsText = `Deleted ${status.rows_deleted.toLocaleString()} rows`;
+      }
+      $('cleanup-stats').textContent = statsText;
+      
+      // Hide progress after 5 seconds
+      setTimeout(() => {
+        progressDiv.style.display = 'none';
+      }, 5000);
+    } else {
+      progressDiv.style.display = 'none';
+    }
+    
+    btn.disabled = false;
+    btn.textContent = '🧹 Run Cleanup Now';
+  }
 }
 
 async function setPerfMode(mode) {
@@ -3616,8 +3710,9 @@ async function runCleanup() {
   if (!confirm('Run data cleanup now? This will delete ping_results older than 7 days in the background.')) return;
   const r = await P('/api/admin/cleanup', {});
   if (r?.success) {
-    toast('✅ Cleanup started in background. Check logs for progress.', 'ok');
-    setTimeout(loadSystemDashboard, 5000); // Refresh after 5 seconds
+    toast('✅ Cleanup started in background', 'ok');
+    // Start polling for status immediately
+    updateCleanupStatus();
   } else {
     toast('Error: ' + (r?.error || 'Unknown'), 'er');
   }

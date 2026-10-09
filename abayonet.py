@@ -969,7 +969,12 @@ def rollup_pings():
     OLD (30-day raw): 160K rows/day × 30 = 4.8M rows = ~580MB
     NEW (7-day raw):  160K rows/day × 7  = 1.1M rows + 87×24×23 hourly = tiny
     """
+    global _cleanup_status
     try:
+        with _cleanup_lock:
+            _cleanup_status['current_step'] = 'Analyzing data...'
+            _cleanup_status['progress'] = 5
+        
         cutoff_raw   = utc_since_str(days=7)    # raw pings older than 7 days → roll up
         cutoff_hour  = utc_since_str(days=30)   # hourly rows older than 30 days → roll to daily
         cutoff_keep  = utc_since_str(days=180)  # delete anything older than 180 days
@@ -979,9 +984,18 @@ def rollup_pings():
             'SELECT DISTINCT host_id FROM ping_results WHERE timestamp<? AND timestamp>=?',
             (cutoff_raw, cutoff_keep))]
 
+        with _cleanup_lock:
+            _cleanup_status['hosts_total'] = len(host_ids)
+            _cleanup_status['progress'] = 10
+        
         total_archived = 0
-        for hid in host_ids:
+        for idx, hid in enumerate(host_ids):
             try:
+                with _cleanup_lock:
+                    _cleanup_status['current_step'] = f'Processing host {idx+1}/{len(host_ids)}'
+                    _cleanup_status['hosts_processed'] = idx + 1
+                    _cleanup_status['progress'] = 10 + int((idx / len(host_ids)) * 70)
+                
                 db = get_db()
                 # Raw → Hourly (7 to 30 days old)
                 # MySQL: INSERT IGNORE instead of INSERT OR IGNORE
@@ -1022,6 +1036,8 @@ def rollup_pings():
                     db.commit()
                     deleted = r.rowcount
                     total_archived += deleted
+                    with _cleanup_lock:
+                        _cleanup_status['rows_deleted'] = total_archived
                     if deleted < batch_size:
                         break  # No more rows to delete
                     time.sleep(0.1)  # Brief pause between batches
@@ -1030,6 +1046,10 @@ def rollup_pings():
                 log.error(f'Rollup error host {hid}: {e}')
                 continue
 
+        with _cleanup_lock:
+            _cleanup_status['current_step'] = 'Purging old data...'
+            _cleanup_status['progress'] = 85
+        
         # Purge old hourly rows (>30 days) and old daily rows (>180 days)
         db = get_db()
         db.execute('DELETE FROM ping_hourly WHERE hour_ts<?', (cutoff_hour,))
@@ -1037,24 +1057,50 @@ def rollup_pings():
         db.execute('DELETE FROM port_results WHERE timestamp<?', (cutoff_raw,))
         db.commit()
 
+        with _cleanup_lock:
+            _cleanup_status['progress'] = 95
+
         if total_archived:
             log.info(f'Rollup: {total_archived} raw pings → hourly summaries '
                      f'across {len(host_ids)} hosts (7d raw / 30d hourly / 180d daily)')
 
     except Exception as e:
         log.error(f'Rollup error: {e}')
+        with _cleanup_lock:
+            _cleanup_status['error'] = str(e)
     finally:
         close_thread_db()
 
 def run_cleanup(forced=False):
     """Rollup + purge + compact DB. Runs hourly. Each step is independently
     fault-tolerant so one slow/failed step never blocks the others or crashes the loop."""
+    global _cleanup_status
+    
+    with _cleanup_lock:
+        if _cleanup_status['running']:
+            log.warning('Cleanup already running, skipping this execution')
+            return
+        _cleanup_status['running'] = True
+        _cleanup_status['started_at'] = datetime.now().isoformat()
+        _cleanup_status['progress'] = 0
+        _cleanup_status['current_step'] = 'Starting cleanup...'
+        _cleanup_status['hosts_processed'] = 0
+        _cleanup_status['hosts_total'] = 0
+        _cleanup_status['rows_deleted'] = 0
+        _cleanup_status['error'] = None
+    
     try:
         rollup_pings()
     except Exception as e:
         log.error(f'Cleanup: rollup step failed: {e}')
+        with _cleanup_lock:
+            _cleanup_status['error'] = str(e)
 
     try:
+        with _cleanup_lock:
+            _cleanup_status['current_step'] = 'Cleaning up alerts...'
+            _cleanup_status['progress'] = 97
+        
         cutoff6m = utc_since_str(days=180)
         r3 = db_exec(
             'DELETE FROM alerts WHERE timestamp<? AND acknowledged=1', (cutoff6m,)).rowcount
@@ -1063,10 +1109,20 @@ def run_cleanup(forced=False):
             log.info(f'Cleanup: {r3} old alerts purged.')
     except Exception as e:
         log.error(f'Cleanup: purge step failed: {e}')
+        with _cleanup_lock:
+            if not _cleanup_status['error']:
+                _cleanup_status['error'] = str(e)
 
     # No manual vacuum step needed on MySQL/InnoDB — space from deleted
     # rollup rows is reused automatically by InnoDB. (SQLite needed
     # PRAGMA incremental_vacuum here; that has no MySQL equivalent.)
+    
+    with _cleanup_lock:
+        _cleanup_status['running'] = False
+        _cleanup_status['progress'] = 100
+        _cleanup_status['current_step'] = 'completed' if not _cleanup_status['error'] else 'failed'
+        _cleanup_status['last_completed'] = datetime.now().isoformat()
+    
     close_thread_db()
 
 def cleanup_loop():
@@ -1120,6 +1176,20 @@ def get_stats(host_id, hours):
 _performance_mode = None  # 'fast' or 'slow' - determined at runtime
 _performance_override = None  # 'auto', 'force_fast', or 'force_slow' - admin control
 _last_perf_check = None
+
+# ── CLEANUP PROGRESS TRACKING ───────────────────────────────────
+_cleanup_status = {
+    'running': False,
+    'started_at': None,
+    'progress': 0,  # 0-100
+    'current_step': 'idle',
+    'hosts_processed': 0,
+    'hosts_total': 0,
+    'rows_deleted': 0,
+    'last_completed': None,
+    'error': None
+}
+_cleanup_lock = threading.Lock()
 _PERF_CHECK_INTERVAL = 300  # Check every 5 minutes
 
 def check_performance_mode():
@@ -2091,6 +2161,13 @@ class H(BaseHTTPRequestHandler):
             if path=='/api/admin/system':
                 if not is_admin: self.json({'error':'Admin only'},403); return
                 self.json(get_system_stats()); return
+            
+            # ADMIN CLEANUP STATUS
+            if path=='/api/admin/cleanup/status':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                with _cleanup_lock:
+                    status = dict(_cleanup_status)
+                self.json(status); return
 
             self.json({'error':'Not found'},404)
         except (ConnectionAbortedError, BrokenPipeError, ConnectionResetError):
