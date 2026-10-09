@@ -1113,6 +1113,17 @@ def run_cleanup(forced=False):
             if not _cleanup_status['error']:
                 _cleanup_status['error'] = str(e)
 
+    # Update table statistics so MySQL information_schema shows accurate row counts
+    try:
+        with _cleanup_lock:
+            _cleanup_status['current_step'] = 'Updating statistics...'
+            _cleanup_status['progress'] = 99
+        
+        db_exec('ANALYZE TABLE ping_results')
+        log.info('Table statistics updated')
+    except Exception as e:
+        log.error(f'Cleanup: statistics update failed: {e}')
+
     # No manual vacuum step needed on MySQL/InnoDB — space from deleted
     # rollup rows is reused automatically by InnoDB. (SQLite needed
     # PRAGMA incremental_vacuum here; that has no MySQL equivalent.)
