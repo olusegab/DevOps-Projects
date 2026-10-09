@@ -1945,7 +1945,7 @@ class H(BaseHTTPRequestHandler):
                     })
                 self.json(hosts); return
 
-            if path.startswith('/api/host/') and '/history' not in path and '/stats' not in path and '/ports' not in path and '/latest' not in path:
+            if path.startswith('/api/host/') and '/history' not in path and '/stats' not in path and '/ports' not in path and '/latest' not in path and '/interfaces' not in path:
                 hid = int(path.split('/')[-1])
                 h = dict(db_one('SELECT * FROM hosts WHERE id=?', (hid,)))
                 s = db_one('SELECT * FROM host_status WHERE host_id=?', (hid,))
@@ -2075,6 +2075,11 @@ class H(BaseHTTPRequestHandler):
             if '/ports' in path:
                 hid=int(path.split('/')[3])
                 self.json([dict(r) for r in db_all('SELECT port,status,latency_ms,timestamp FROM port_results WHERE host_id=? ORDER BY timestamp DESC LIMIT 50',(hid,))]); return
+            
+            if '/interfaces' in path:
+                hid=int(path.split('/')[3])
+                interfaces = db_all('SELECT * FROM interfaces WHERE host_id=? ORDER BY if_index', (hid,))
+                self.json([dict(r) for r in interfaces]); return
 
             # ALERTS
             if path=='/api/alerts':
