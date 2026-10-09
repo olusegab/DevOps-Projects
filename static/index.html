@@ -3617,11 +3617,14 @@ async function loadSystemDashboard() {
   sysHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);">TOTAL HOSTS</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${sys.total_hosts||0}</div></div>`;
   $('sys-info').innerHTML = sysHTML;
   
-  // Check cleanup status
-  updateCleanupStatus();
+  // Only check cleanup status on initial load if we haven't shown it yet
+  if (!_cleanupShownOnce) {
+    updateCleanupStatus();
+  }
 }
 
 let _cleanupStatusTimer = null;
+let _cleanupShownOnce = false; // Track if we've shown completed status
 
 async function updateCleanupStatus() {
   const status = await G('/api/admin/cleanup/status');
@@ -3631,10 +3634,14 @@ async function updateCleanupStatus() {
   const btn = $('cleanup-btn');
   
   if (status.running) {
+    // Reset the flag when cleanup starts
+    _cleanupShownOnce = false;
+    
     // Show progress bar
     progressDiv.style.display = 'block';
     $('cleanup-percent').textContent = status.progress + '%';
     $('cleanup-bar').style.width = status.progress + '%';
+    $('cleanup-bar').style.background = 'linear-gradient(90deg,var(--acc),var(--acc2))';
     $('cleanup-status').textContent = status.current_step || 'Processing...';
     
     let statsText = '';
@@ -3660,7 +3667,10 @@ async function updateCleanupStatus() {
       _cleanupStatusTimer = null;
     }
     
-    if (status.last_completed) {
+    // Only show completed status once
+    if (status.last_completed && !_cleanupShownOnce) {
+      _cleanupShownOnce = true;
+      
       // Show completed status briefly
       progressDiv.style.display = 'block';
       $('cleanup-percent').textContent = '100%';
@@ -3673,8 +3683,24 @@ async function updateCleanupStatus() {
         $('cleanup-status').textContent = '✅ Cleanup completed successfully';
         $('cleanup-bar').style.background = 'var(--G)';
         
-        // Refresh system stats after cleanup
-        setTimeout(loadSystemDashboard, 2000);
+        // Refresh system stats after cleanup (but don't call updateCleanupStatus again)
+        setTimeout(() => {
+          const data = G('/api/admin/system').then(data => {
+            if (data) {
+              // Update stats without calling full loadSystemDashboard
+              const pr = data.ping_results || {};
+              let pingHTML = '<div style="line-height:2.2;">';
+              pingHTML += `<div><strong>Total rows:</strong> ${(pr.total||0).toLocaleString()}</div>`;
+              pingHTML += `<div><strong>Oldest data:</strong> ${pr.oldest || '—'}</div>`;
+              pingHTML += `<div><strong>Newest data:</strong> ${pr.newest || '—'}</div>`;
+              pingHTML += `<div><strong>Hosts monitored:</strong> ${pr.hosts_with_data || 0}</div>`;
+              const days = pr.oldest ? Math.floor((new Date(pr.newest) - new Date(pr.oldest))/(1000*60*60*24)) : 0;
+              pingHTML += `<div><strong>Data span:</strong> ${days} days</div>`;
+              pingHTML += '</div>';
+              $('sys-ping-stats').innerHTML = pingHTML;
+            }
+          });
+        }, 2000);
       }
       
       let statsText = '';
@@ -3688,6 +3714,7 @@ async function updateCleanupStatus() {
         progressDiv.style.display = 'none';
       }, 5000);
     } else {
+      // Don't show anything if already shown once or no completion yet
       progressDiv.style.display = 'none';
     }
     
