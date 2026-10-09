@@ -1139,7 +1139,7 @@ def check_performance_mode():
     
     now = datetime.now()
     if _last_perf_check and (now - _last_perf_check).total_seconds() < _PERF_CHECK_INTERVAL:
-        return _performance_mode
+        return _performance_mode or 'slow'  # Return slow if still None
     
     try:
         # Quick count using table stats (doesn't scan the table)
@@ -1154,14 +1154,17 @@ def check_performance_mode():
         _performance_mode = 'fast' if row_count < 1000000 else 'slow'
         _last_perf_check = now
         
-        if old_mode != _performance_mode and _performance_override == 'auto':
+        if old_mode != _performance_mode and _performance_override in [None, 'auto']:
             log.info(f'Performance mode switched to {_performance_mode} '
                     f'(ping_results: {row_count:,} rows)')
         
         return _performance_mode
     except Exception as e:
         log.error(f'Performance check failed: {e}')
-        return 'slow'  # Safe default
+        # Ensure mode is set even on error
+        if _performance_mode is None:
+            _performance_mode = 'slow'
+        return _performance_mode
 
 def get_system_stats():
     """Gather comprehensive system statistics for admin dashboard."""
@@ -1172,13 +1175,13 @@ def get_system_stats():
         db_name = _DB_CONF.get('database', 'abayonetDB')
         
         # Database table sizes
-        tables = db_all(f"""
+        tables = db_all("""
             SELECT TABLE_NAME, TABLE_ROWS, 
                    ROUND(DATA_LENGTH/1024/1024, 2) as size_mb,
                    ROUND(INDEX_LENGTH/1024/1024, 2) as index_mb
             FROM information_schema.TABLES 
-            WHERE TABLE_SCHEMA='{db_name}'
-            ORDER BY DATA_LENGTH DESC""")
+            WHERE TABLE_SCHEMA=?
+            ORDER BY DATA_LENGTH DESC""", (db_name,))
         stats['tables'] = [dict(t) for t in tables]
         
         # Ping results age distribution
@@ -1192,10 +1195,10 @@ def get_system_stats():
         
         # MySQL connection stats
         mysql_stats = {}
-        mysql_vars = db_all("SHOW VARIABLES LIKE '%connection%'")
+        mysql_vars = db_all("SHOW VARIABLES LIKE '%%connection%%'")
         for v in mysql_vars:
             mysql_stats[v['Variable_name']] = v['Value']
-        mysql_status = db_all("SHOW STATUS LIKE '%connection%'")
+        mysql_status = db_all("SHOW STATUS LIKE '%%connection%%'")
         for v in mysql_status:
             mysql_stats[v['Variable_name']] = v['Value']
         stats['mysql'] = mysql_stats
@@ -2431,6 +2434,9 @@ def main():
 
     log.info(f'=== AbayoNet Enterprise v{VERSION} ===')
     init_db(); start_all()
+    
+    # Initialize performance mode on startup
+    check_performance_mode()
 
     # Email worker
     _email_queue = queue.Queue(maxsize=100)
