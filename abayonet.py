@@ -16,6 +16,14 @@ from urllib.parse import urlparse, parse_qs
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+# SNMP imports for bandwidth monitoring
+try:
+    from pysnmp.hlapi import *
+    SNMP_AVAILABLE = True
+except ImportError:
+    SNMP_AVAILABLE = False
+    # Will log warning after logger is set up
+
 # ── Absolute base directory — works correctly whether run directly,
 #    as a Windows Service, or via systemd (cwd varies in all cases) ──
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -919,6 +927,13 @@ def start_all():
     threading.Thread(target=_refresh_report_cache_bg,
                      daemon=True, name='report-cache').start()
     
+    # Start SNMP bandwidth monitoring
+    if SNMP_AVAILABLE:
+        threading.Thread(target=snmp_bandwidth_monitor_loop, daemon=True, name='snmp-monitor').start()
+        log.info('SNMP bandwidth monitoring started')
+    else:
+        log.warning('SNMP library not available - bandwidth monitoring disabled')
+    
     # Watchdog — restarts dead/stalled monitor threads every 60s
     threading.Thread(target=_monitor_watchdog, daemon=True, name='watchdog').start()
     log.info('Cache warmup, report-cache refresh, and watchdog started (adaptive mode)')
@@ -963,6 +978,167 @@ def _monitor_watchdog():
             log.error(f'Watchdog error: {e}')
         finally:
             close_thread_db()
+
+# ── SNMP BANDWIDTH MONITORING ────────────────────────────────────
+def snmp_discover_interfaces(ip, community='public', timeout=5):
+    """
+    Discover network interfaces via SNMP.
+    Returns list of dicts with if_index, if_name, if_speed_bps
+    """
+    if not SNMP_AVAILABLE:
+        return []
+    
+    interfaces = []
+    try:
+        # OIDs for interface discovery
+        OID_ifIndex = '1.3.6.1.2.1.2.2.1.1'
+        OID_ifDescr = '1.3.6.1.2.1.2.2.1.2'
+        OID_ifSpeed = '1.3.6.1.2.1.2.2.1.5'
+        
+        # Walk the interface table
+        for (errorIndication, errorStatus, errorIndex, varBinds) in nextCmd(
+            SnmpEngine(),
+            CommunityData(community),
+            UdpTransportTarget((ip, 161), timeout=timeout),
+            ContextData(),
+            ObjectType(ObjectIdentity(OID_ifIndex)),
+            ObjectType(ObjectIdentity(OID_ifDescr)),
+            ObjectType(ObjectIdentity(OID_ifSpeed)),
+            lexicographicMode=False
+        ):
+            if errorIndication or errorStatus:
+                break
+                
+            if_index = int(varBinds[0][1])
+            if_name = str(varBinds[1][1])
+            if_speed = int(varBinds[2][1])
+            
+            interfaces.append({
+                'if_index': if_index,
+                'if_name': if_name,
+                'if_speed_bps': if_speed
+            })
+    except Exception as e:
+        log.error(f'SNMP discovery failed for {ip}: {e}')
+    
+    return interfaces
+
+def snmp_get_bandwidth(ip, if_index, community='public', timeout=5):
+    """
+    Get current bandwidth counters for an interface via SNMP.
+    Returns dict with in_octets, out_octets or None on error.
+    """
+    if not SNMP_AVAILABLE:
+        return None
+    
+    try:
+        OID_ifInOctets = f'1.3.6.1.2.1.2.2.1.10.{if_index}'
+        OID_ifOutOctets = f'1.3.6.1.2.1.2.2.1.16.{if_index}'
+        
+        errorIndication, errorStatus, errorIndex, varBinds = next(
+            getCmd(SnmpEngine(),
+                   CommunityData(community),
+                   UdpTransportTarget((ip, 161), timeout=timeout),
+                   ContextData(),
+                   ObjectType(ObjectIdentity(OID_ifInOctets)),
+                   ObjectType(ObjectIdentity(OID_ifOutOctets)))
+        )
+        
+        if errorIndication or errorStatus:
+            return None
+        
+        return {
+            'in_octets': int(varBinds[0][1]),
+            'out_octets': int(varBinds[1][1])
+        }
+    except Exception as e:
+        log.debug(f'SNMP bandwidth query failed for {ip} if{if_index}: {e}')
+        return None
+
+def snmp_bandwidth_monitor_loop():
+    """
+    Background thread that polls SNMP-enabled hosts for bandwidth data.
+    Runs every 5 minutes.
+    """
+    # Store previous counters for calculating rates
+    prev_counters = {}  # (host_id, if_index) -> {'in': x, 'out': y, 'ts': timestamp}
+    
+    while _running:
+        try:
+            # Get hosts with SNMP enabled and monitored interfaces
+            hosts = db_all("""
+                SELECT DISTINCT h.id, h.ip, h.snmp_community
+                FROM hosts h
+                JOIN interfaces i ON h.id = i.host_id
+                WHERE h.enabled=1 AND i.monitored=1 AND h.snmp_community IS NOT NULL
+            """)
+            
+            for host in hosts:
+                host_id = host['id']
+                ip = host['ip']
+                community = host['snmp_community'] or 'public'
+                
+                # Get monitored interfaces for this host
+                interfaces = db_all(
+                    'SELECT if_index, if_speed_bps FROM interfaces WHERE host_id=? AND monitored=1',
+                    (host_id,)
+                )
+                
+                now = time.time()
+                
+                for iface in interfaces:
+                    if_index = iface['if_index']
+                    if_speed = iface['if_speed_bps'] or 1000000000  # Default 1Gbps
+                    
+                    # Get current counters
+                    counters = snmp_get_bandwidth(ip, if_index, community)
+                    if not counters:
+                        continue
+                    
+                    key = (host_id, if_index)
+                    prev = prev_counters.get(key)
+                    
+                    if prev:
+                        # Calculate bandwidth (bits per second)
+                        time_diff = now - prev['ts']
+                        if time_diff > 0:
+                            # Handle counter wrap-around (32-bit counters)
+                            in_diff = counters['in_octets'] - prev['in']
+                            out_diff = counters['out_octets'] - prev['out']
+                            
+                            if in_diff < 0:
+                                in_diff += 2**32
+                            if out_diff < 0:
+                                out_diff += 2**32
+                            
+                            in_bps = int((in_diff * 8) / time_diff)
+                            out_bps = int((out_diff * 8) / time_diff)
+                            
+                            # Store bandwidth data
+                            try:
+                                db_exec("""
+                                    INSERT INTO bandwidth_results 
+                                    (host_id, if_index, in_bps, out_bps)
+                                    VALUES (?, ?, ?, ?)
+                                """, (host_id, if_index, in_bps, out_bps))
+                            except Exception as e:
+                                log.error(f'Failed to store bandwidth data for host {host_id} if{if_index}: {e}')
+                    
+                    # Update previous counters
+                    prev_counters[key] = {
+                        'in': counters['in_octets'],
+                        'out': counters['out_octets'],
+                        'ts': now
+                    }
+            
+            close_thread_db()
+            
+        except Exception as e:
+            log.error(f'SNMP bandwidth monitor error: {e}')
+            close_thread_db()
+        
+        # Poll every 5 minutes
+        time.sleep(300)
 
 def rollup_pings():
     """
@@ -2336,6 +2512,42 @@ class H(BaseHTTPRequestHandler):
                             _report_cache_ts = datetime.now()
                 threading.Thread(target=_do_refresh, daemon=True, name='report-refresh').start()
                 self.json({'ok': True, 'message': 'Cache refresh started in background'}); return
+            
+            # SNMP INTERFACE DISCOVERY
+            if path.startswith('/api/host/') and path.endswith('/discover'):
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                hid = int(path.split('/')[3])
+                host = db_one('SELECT ip, snmp_community FROM hosts WHERE id=?', (hid,))
+                if not host:
+                    self.json({'error':'Host not found'},404); return
+                
+                community = host['snmp_community'] or 'public'
+                interfaces = snmp_discover_interfaces(host['ip'], community)
+                
+                if not interfaces:
+                    self.json({'error':'No interfaces discovered. Check SNMP community string and host connectivity.'},400); return
+                
+                # Store discovered interfaces
+                now = utc_now_str()
+                for iface in interfaces:
+                    db_exec("""
+                        INSERT INTO interfaces (host_id, if_index, if_name, if_speed_bps, last_seen)
+                        VALUES (?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE 
+                            if_name=VALUES(if_name), 
+                            if_speed_bps=VALUES(if_speed_bps),
+                            last_seen=VALUES(last_seen)
+                    """, (hid, iface['if_index'], iface['if_name'], iface['if_speed_bps'], now))
+                
+                self.json({'success':True, 'count':len(interfaces), 'interfaces':interfaces}); return
+            
+            # TOGGLE INTERFACE MONITORING
+            if path.startswith('/api/interfaces/') and path.endswith('/toggle'):
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                if_id = int(path.split('/')[-2])
+                monitored = int(b.get('monitored', 1))
+                db_exec('UPDATE interfaces SET monitored=? WHERE id=?', (monitored, if_id))
+                self.json({'success':True}); return
 
             # PING NOW
             if path.startswith('/api/ping/'):
