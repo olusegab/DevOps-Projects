@@ -273,8 +273,8 @@ def db_all(sql, params=()):
 def utc_now_str():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-def utc_since_str(hours=0, days=0):
-    return (datetime.now() - timedelta(hours=hours, days=days)).strftime('%Y-%m-%d %H:%M:%S')
+def utc_since_str(hours=0, days=0, minutes=0):
+    return (datetime.now() - timedelta(hours=hours, days=days, minutes=minutes)).strftime('%Y-%m-%d %H:%M:%S')
 
 def cfg(key, default=''):
     try:
@@ -961,13 +961,13 @@ def _monitor_watchdog():
 def rollup_pings():
     """
     Tiered data retention — permanent solution to data growth:
-    - Raw pings:     last 7 days   (full resolution for live graphs)
-    - Hourly rollup: 7 - 30 days   (1 row/hour/host for weekly analysis)
+    - Raw pings:     last 4 days   (full resolution for live graphs)
+    - Hourly rollup: 4 - 30 days   (1 row/hour/host for weekly analysis)
     - Daily rollup:  30 - 180 days (1 row/day/host for monthly/6-month reports)
 
     With 87 hosts at 30s interval:
-    OLD (30-day raw): 160K rows/day × 30 = 4.8M rows = ~580MB
-    NEW (7-day raw):  160K rows/day × 7  = 1.1M rows + 87×24×23 hourly = tiny
+    OLD (7-day raw): 160K rows/day × 7  = 1.1M rows
+    NEW (4-day raw): 160K rows/day × 4  = 640K rows (fast mode!)
     """
     global _cleanup_status
     try:
@@ -975,7 +975,7 @@ def rollup_pings():
             _cleanup_status['current_step'] = 'Analyzing data...'
             _cleanup_status['progress'] = 5
         
-        cutoff_raw   = utc_since_str(days=7)    # raw pings older than 7 days → roll up
+        cutoff_raw   = utc_since_str(days=4)    # raw pings older than 4 days → roll up
         cutoff_hour  = utc_since_str(days=30)   # hourly rows older than 30 days → roll to daily
         cutoff_keep  = utc_since_str(days=180)  # delete anything older than 180 days
 
@@ -1859,16 +1859,17 @@ class H(BaseHTTPRequestHandler):
 
             # DASHBOARD CHART — single query for top-6 hosts with most recent data
             if path=='/api/dashboard/chart':
-                # Skip expensive chart query in slow mode
+                # In slow mode, use shorter time window (15 min instead of 1 hour)
                 if check_performance_mode() == 'slow':
-                    self.json([]); return
+                    since = utc_since_str(minutes=15)
+                else:
+                    since = utc_since_str(hours=1)
                     
-                since_1h = utc_since_str(hours=1)
                 active = db_all(
                     "SELECT p.host_id, h.name, h.ip "
                     "FROM ping_results p JOIN hosts h ON h.id=p.host_id "
                     "WHERE p.timestamp > ? "
-                    "GROUP BY p.host_id, h.name, h.ip ORDER BY MAX(p.timestamp) DESC LIMIT 6", (since_1h,))
+                    "GROUP BY p.host_id, h.name, h.ip ORDER BY MAX(p.timestamp) DESC LIMIT 6", (since,))
                 if not active:
                     self.json([]); return
                 ids = [r['host_id'] for r in active]
@@ -1877,7 +1878,7 @@ class H(BaseHTTPRequestHandler):
                     f"SELECT host_id, timestamp, latency_ms, packet_loss, status "
                     f"FROM ping_results WHERE host_id IN ({placeholders}) "
                     f"AND timestamp > ? "
-                    f"ORDER BY host_id, timestamp ASC", ids + [since_1h])
+                    f"ORDER BY host_id, timestamp ASC", ids + [since])
                 host_data = {}
                 for a in active:
                     host_data[a['host_id']] = {'name': a['name'], 'ip': a['ip'], 'points': []}
