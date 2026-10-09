@@ -1945,7 +1945,7 @@ class H(BaseHTTPRequestHandler):
                     })
                 self.json(hosts); return
 
-            if path.startswith('/api/host/') and '/history' not in path and '/stats' not in path and '/ports' not in path and '/latest' not in path and '/interfaces' not in path:
+            if path.startswith('/api/host/') and '/history' not in path and '/stats' not in path and '/ports' not in path and '/latest' not in path and '/interfaces' not in path and '/bandwidth' not in path:
                 hid = int(path.split('/')[-1])
                 h = dict(db_one('SELECT * FROM hosts WHERE id=?', (hid,)))
                 s = db_one('SELECT * FROM host_status WHERE host_id=?', (hid,))
@@ -2080,6 +2080,21 @@ class H(BaseHTTPRequestHandler):
                 hid=int(path.split('/')[3])
                 interfaces = db_all('SELECT * FROM interfaces WHERE host_id=? ORDER BY if_index', (hid,))
                 self.json([dict(r) for r in interfaces]); return
+            
+            if '/bandwidth' in path:
+                hid=int(path.split('/')[3])
+                # Get bandwidth data from bandwidth_results table
+                since = qp('since', utc_since_str(hours=24))
+                limit = int(qp('limit', '1000'))
+                bw_data = db_all('''
+                    SELECT b.timestamp, b.if_index, b.in_bps, b.out_bps,
+                           i.if_name, i.if_speed_bps
+                    FROM bandwidth_results b
+                    LEFT JOIN interfaces i ON b.host_id=i.host_id AND b.if_index=i.if_index
+                    WHERE b.host_id=? AND b.timestamp>?
+                    ORDER BY b.timestamp DESC, b.if_index ASC
+                    LIMIT ?''', (hid, since, limit))
+                self.json([dict(r) for r in bw_data]); return
 
             # ALERTS
             if path=='/api/alerts':
