@@ -1143,9 +1143,10 @@ def check_performance_mode():
     
     try:
         # Quick count using table stats (doesn't scan the table)
+        db_name = _DB_CONF.get('database', 'abayonetDB')
         result = db_one(
-            "SELECT TABLE_ROWS FROM information_schema.TABLES "
-            "WHERE TABLE_SCHEMA='abayonetDB' AND TABLE_NAME='ping_results'")
+            f"SELECT TABLE_ROWS FROM information_schema.TABLES "
+            f"WHERE TABLE_SCHEMA='{db_name}' AND TABLE_NAME='ping_results'")
         row_count = result['TABLE_ROWS'] if result else 0
         
         # Fast mode if under 1M rows (cleanup completed)
@@ -1167,13 +1168,16 @@ def get_system_stats():
     try:
         stats = {}
         
+        # Get database name from config
+        db_name = _DB_CONF.get('database', 'abayonetDB')
+        
         # Database table sizes
-        tables = db_all("""
+        tables = db_all(f"""
             SELECT TABLE_NAME, TABLE_ROWS, 
                    ROUND(DATA_LENGTH/1024/1024, 2) as size_mb,
                    ROUND(INDEX_LENGTH/1024/1024, 2) as index_mb
             FROM information_schema.TABLES 
-            WHERE TABLE_SCHEMA='abayonetDB'
+            WHERE TABLE_SCHEMA='{db_name}'
             ORDER BY DATA_LENGTH DESC""")
         stats['tables'] = [dict(t) for t in tables]
         
@@ -2080,6 +2084,11 @@ class H(BaseHTTPRequestHandler):
                 u=db_one('SELECT id,username,role,full_name,email,created_at,last_login FROM users WHERE username=?',(sess['username'],))
                 self.json(dict(u) if u else {}); return
 
+            # ADMIN SYSTEM DASHBOARD
+            if path=='/api/admin/system':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                self.json(get_system_stats()); return
+
             self.json({'error':'Not found'},404)
         except (ConnectionAbortedError, BrokenPipeError, ConnectionResetError):
             pass  # client disconnected — normal, not an error
@@ -2247,11 +2256,6 @@ class H(BaseHTTPRequestHandler):
                 if not is_admin: self.json({'error':'Admin only'},403); return
                 for k,v in b.items(): db_exec('INSERT OR REPLACE INTO settings(`key`,`value`) VALUES(?,?)',(k,str(v)))
                 self.json({'success':True}); return
-
-            # ADMIN SYSTEM DASHBOARD
-            if path=='/api/admin/system':
-                if not is_admin: self.json({'error':'Admin only'},403); return
-                self.json(get_system_stats()); return
 
             # ADMIN PERFORMANCE CONTROL
             if path=='/api/admin/performance':
