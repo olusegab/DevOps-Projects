@@ -18,17 +18,15 @@ from email.mime.multipart import MIMEMultipart
 
 # SNMP imports for bandwidth monitoring
 try:
-    from pysnmp.entity.rfc3413.oneliner import cmdgen
-    from pysnmp.proto.rfc1902 import Integer, IpAddress, OctetString
+    import asyncio
+    from pysnmp.hlapi.v3arch.asyncio import (
+        SnmpEngine, CommunityData, UdpTransportTarget, ContextData,
+        ObjectType, ObjectIdentity, get_cmd, next_cmd, bulk_cmd, is_end_of_mib
+    )
     SNMP_AVAILABLE = True
 except ImportError:
-    try:
-        # Try newer pysnmp API
-        from pysnmp.hlapi import *
-        SNMP_AVAILABLE = True
-    except ImportError:
-        SNMP_AVAILABLE = False
-        # Will log warning after logger is set up
+    SNMP_AVAILABLE = False
+    # Will log warning after logger is set up
 
 # ── Absolute base directory — works correctly whether run directly,
 #    as a Windows Service, or via systemd (cwd varies in all cases) ──
@@ -994,49 +992,98 @@ def snmp_discover_interfaces(ip, community='public', timeout=5):
     if not SNMP_AVAILABLE:
         return []
     
-    interfaces = []
+    # Run async function in new event loop
     try:
-        cmdGen = cmdgen.CommandGenerator()
-        
-        # OIDs for interface discovery  
-        OID_ifDescr = '1.3.6.1.2.1.2.2.1.2'
-        OID_ifSpeed = '1.3.6.1.2.1.2.2.1.5'
-        
-        errorIndication, errorStatus, errorIndex, varBindTable = cmdGen.nextCmd(
-            cmdgen.CommunityData(community),
-            cmdgen.UdpTransportTarget((ip, 161), timeout=timeout),
-            OID_ifDescr,
-            OID_ifSpeed
-        )
-        
-        if errorIndication or errorStatus:
-            log.error(f'SNMP walk error for {ip}: {errorIndication or errorStatus}')
-            return []
-        
-        for varBindTableRow in varBindTable:
-            if_index = None
-            if_name = None
-            if_speed = None
-            
-            for oid, val in varBindTableRow:
-                oid_str = str(oid)
-                if OID_ifDescr in oid_str:
-                    if_index = int(oid_str.split('.')[-1])
-                    if_name = str(val)
-                elif OID_ifSpeed in oid_str:
-                    if_speed = int(val)
-            
-            if if_index and if_name:
-                interfaces.append({
-                    'if_index': if_index,
-                    'if_name': if_name,
-                    'if_speed_bps': if_speed or 1000000000
-                })
-                
+        return asyncio.run(_snmp_discover_interfaces_async(ip, community, timeout))
     except Exception as e:
         log.error(f'SNMP discovery failed for {ip}: {e}')
+        import traceback
+        log.error(traceback.format_exc())
+        return []
+
+async def _snmp_discover_interfaces_async(ip, community='public', timeout=5):
+    """Async implementation of interface discovery"""
+    interfaces = {}  # if_index -> {if_name, if_speed_bps}
     
-    return interfaces
+    try:
+        snmpEngine = SnmpEngine()
+        transport = await UdpTransportTarget.create((ip, 161), timeout=timeout, retries=1)
+        
+        # Walk ifDescr to get interface names
+        OID_ifDescr = '1.3.6.1.2.1.2.2.1.2'
+        varBinds = [ObjectType(ObjectIdentity(OID_ifDescr))]
+        
+        while True:
+            errorIndication, errorStatus, errorIndex, varBindTable = await next_cmd(
+                snmpEngine,
+                CommunityData(community),
+                transport,
+                ContextData(),
+                *varBinds
+            )
+            
+            if errorIndication:
+                log.error(f'SNMP discovery error for {ip}: {errorIndication}')
+                break
+            
+            if errorStatus:
+                log.error(f'SNMP discovery error for {ip}: {errorStatus.prettyPrint()}')
+                break
+            
+            # Parse interface names
+            for varBind in varBindTable:
+                oid_str = str(varBind[0])
+                if OID_ifDescr in oid_str:
+                    if_index = int(oid_str.split('.')[-1])
+                    if_name = str(varBind[1])
+                    interfaces[if_index] = {
+                        'if_index': if_index,
+                        'if_name': if_name,
+                        'if_speed_bps': 1000000000  # Default, will update below
+                    }
+            
+            # Check if we've reached the end
+            varBinds = varBindTable
+            if is_end_of_mib(varBinds):
+                break
+        
+        # Walk ifSpeed to get interface speeds
+        OID_ifSpeed = '1.3.6.1.2.1.2.2.1.5'
+        varBinds = [ObjectType(ObjectIdentity(OID_ifSpeed))]
+        
+        while True:
+            errorIndication, errorStatus, errorIndex, varBindTable = await next_cmd(
+                snmpEngine,
+                CommunityData(community),
+                transport,
+                ContextData(),
+                *varBinds
+            )
+            
+            if errorIndication or errorStatus:
+                break
+            
+            for varBind in varBindTable:
+                oid_str = str(varBind[0])
+                if OID_ifSpeed in oid_str:
+                    if_index = int(oid_str.split('.')[-1])
+                    if if_index in interfaces:
+                        try:
+                            interfaces[if_index]['if_speed_bps'] = int(varBind[1])
+                        except (ValueError, TypeError):
+                            pass
+            
+            # Check if we've reached the end
+            varBinds = varBindTable
+            if is_end_of_mib(varBinds):
+                break
+    
+    except Exception as e:
+        log.error(f'Async SNMP discovery failed for {ip}: {e}')
+        import traceback
+        log.error(traceback.format_exc())
+    
+    return list(interfaces.values())
 
 def snmp_get_bandwidth(ip, if_index, community='public', timeout=5):
     """
@@ -1047,30 +1094,59 @@ def snmp_get_bandwidth(ip, if_index, community='public', timeout=5):
         return None
     
     try:
-        cmdGen = cmdgen.CommandGenerator()
+        return asyncio.run(_snmp_get_bandwidth_async(ip, if_index, community, timeout))
+    except Exception as e:
+        log.debug(f'SNMP bandwidth query failed for {ip} if{if_index}: {e}')
+        return None
+
+async def _snmp_get_bandwidth_async(ip, if_index, community='public', timeout=5):
+    """Async implementation of bandwidth counter retrieval"""
+    try:
+        snmpEngine = SnmpEngine()
+        transport = await UdpTransportTarget.create((ip, 161), timeout=timeout, retries=1)
         
+        # OIDs for interface counters
         OID_ifInOctets = f'1.3.6.1.2.1.2.2.1.10.{if_index}'
         OID_ifOutOctets = f'1.3.6.1.2.1.2.2.1.16.{if_index}'
         
-        errorIndication, errorStatus, errorIndex, varBinds = cmdGen.getCmd(
-            cmdgen.CommunityData(community),
-            cmdgen.UdpTransportTarget((ip, 161), timeout=timeout),
-            OID_ifInOctets,
-            OID_ifOutOctets
+        errorIndication, errorStatus, errorIndex, varBinds = await get_cmd(
+            snmpEngine,
+            CommunityData(community),
+            transport,
+            ContextData(),
+            ObjectType(ObjectIdentity(OID_ifInOctets)),
+            ObjectType(ObjectIdentity(OID_ifOutOctets))
         )
         
-        if errorIndication or errorStatus:
+        if errorIndication:
+            log.debug(f'SNMP get error for {ip} if{if_index}: {errorIndication}')
             return None
         
-        in_octets = int(varBinds[0][1])
-        out_octets = int(varBinds[1][1])
+        if errorStatus:
+            log.debug(f'SNMP get error for {ip} if{if_index}: {errorStatus.prettyPrint()}')
+            return None
         
-        return {
-            'in_octets': in_octets,
-            'out_octets': out_octets
-        }
+        # Parse results
+        in_octets = None
+        out_octets = None
+        
+        for varBind in varBinds:
+            oid_str = str(varBind[0])
+            if '.10.' in oid_str:  # ifInOctets
+                in_octets = int(varBind[1])
+            elif '.16.' in oid_str:  # ifOutOctets
+                out_octets = int(varBind[1])
+        
+        if in_octets is not None and out_octets is not None:
+            return {
+                'in_octets': in_octets,
+                'out_octets': out_octets
+            }
+        
+        return None
+        
     except Exception as e:
-        log.debug(f'SNMP bandwidth query failed for {ip} if{if_index}: {e}')
+        log.debug(f'Async SNMP bandwidth query failed for {ip} if{if_index}: {e}')
         return None
 
 def snmp_bandwidth_monitor_loop():
