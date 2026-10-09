@@ -352,6 +352,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
   <div class="sbi adm" id="nav-users"    onclick="nav('users')">   <span class="sbic">👥</span><span class="sbtt">User Management</span></div>
   <div class="sbi adm" id="nav-transfer" onclick="nav('transfer')"><span class="sbic">📦</span><span class="sbtt">Import / Export</span></div>
   <div class="sbi"     id="nav-settings" onclick="nav('settings')"><span class="sbic">⚙</span><span class="sbtt">Settings</span></div>
+  <div class="sbi adm" id="nav-system"   onclick="nav('system')">  <span class="sbic">🖥</span><span class="sbtt">System Dashboard</span></div>
   <div class="sbl" style="margin-top:6px">Live Hosts</div>
   <div class="sbhosts" id="sb-hosts"></div>
   <div class="sbtog" id="sbtog" onclick="toggleSb()">◀</div>
@@ -810,6 +811,65 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
   </div>
 </div>
 
+<!-- ── SYSTEM DASHBOARD (ADMIN ONLY) ── -->
+<div class="page" id="page-system">
+  <div style="font-family:'Orbit Ron',monospace;font-size:13px;color:var(--acc);margin-bottom:12px;">🖥 System Dashboard</div>
+  
+  <!-- Performance Mode Control -->
+  <div class="card" style="background:linear-gradient(135deg,var(--bg2),var(--bg3));border:2px solid var(--acc);">
+    <div class="ct">⚡ Performance Mode Control</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="background:var(--bg3);padding:14px;border-radius:8px;">
+        <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Current Mode</div>
+        <div style="font-size:24px;font-weight:700;color:var(--acc);" id="sys-perf-mode">—</div>
+        <div style="font-size:9px;color:var(--tx2);margin-top:4px;" id="sys-perf-desc">—</div>
+      </div>
+      <div style="background:var(--bg3);padding:14px;border-radius:8px;">
+        <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Override Status</div>
+        <div style="font-size:24px;font-weight:700;color:var(--acc2);" id="sys-perf-override">—</div>
+        <div style="font-size:9px;color:var(--tx2);margin-top:4px;">Manual admin control</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+      <button class="btn btnS" onclick="setPerfMode('auto')" style="font-size:11px;">🤖 Auto</button>
+      <button class="btn btnA" onclick="setPerfMode('force_fast')" style="font-size:11px;">⚡ Force Fast</button>
+      <button class="btn" onclick="setPerfMode('force_slow')" style="font-size:11px;background:var(--Y);color:#000;">🐢 Force Slow</button>
+    </div>
+    <div style="background:var(--bg4);padding:10px;border-radius:6px;font-size:10px;color:var(--tx2);margin-top:12px;line-height:1.8;">
+      <strong style="color:var(--G);">Fast Mode:</strong> All features enabled (report cache, full uptime calcs, charts)<br/>
+      <strong style="color:var(--Y);">Slow Mode:</strong> Expensive queries disabled (uses approximations)<br/>
+      <strong style="color:var(--acc);">Auto Mode:</strong> Switches based on table size (&lt;1M rows = fast)
+    </div>
+  </div>
+
+  <!-- Database Statistics -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+    <div class="card">
+      <div class="ct">💾 Database Tables</div>
+      <div id="sys-tables" style="font-size:11px;max-height:300px;overflow-y:auto;"></div>
+    </div>
+    <div class="card">
+      <div class="ct">📊 Ping Results Stats</div>
+      <div id="sys-ping-stats" style="font-size:11px;"></div>
+      <div style="margin-top:12px;">
+        <button class="btn btnA" onclick="runCleanup()" style="width:100%;font-size:11px;">🧹 Run Cleanup Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MySQL Connection Stats -->
+  <div class="card" style="margin-top:12px;">
+    <div class="ct">🔌 MySQL Connection Statistics</div>
+    <div id="sys-mysql" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;font-size:11px;"></div>
+  </div>
+
+  <!-- System Info -->
+  <div class="card" style="margin-top:12px;">
+    <div class="ct">⚙ System Information</div>
+    <div id="sys-info" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:11px;"></div>
+  </div>
+</div>
+
 <!-- ── HISTORY ANALYSIS ── -->
 <div class="page" id="page-analysis">
   <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔬 History Analysis</div>
@@ -1243,7 +1303,8 @@ function nav(name) {
     settings: loadSettings,
     dash:     loadDash,
     users:    loadUsers,
-    analysis: loadAnalysis
+    analysis: loadAnalysis,
+    system:   loadSystemDashboard
   };
   loaders[name]?.();
 }
@@ -3482,6 +3543,86 @@ function exportAnalysisCSV() {
   a.download = `abayonet_history_${new Date().toISOString().slice(0,16).replace(/[T:]/g,'-')}.csv`;
   a.click();
 }
+
+/* ═══════════════════════════════════════════
+   SYSTEM DASHBOARD (ADMIN)
+═══════════════════════════════════════════ */
+async function loadSystemDashboard() {
+  const data = await G('/api/admin/system');
+  if (!data) return;
+  
+  // Performance mode
+  const perfMode = data.performance?.current_mode || 'unknown';
+  const perfOverride = data.performance?.override || 'auto';
+  $('sys-perf-mode').textContent = perfMode.toUpperCase();
+  $('sys-perf-override').textContent = perfOverride.replace('_', ' ').toUpperCase();
+  $('sys-perf-mode').style.color = perfMode === 'fast' ? 'var(--G)' : 'var(--Y)';
+  $('sys-perf-desc').textContent = perfMode === 'fast' ? 'All features enabled' : 'Using approximations';
+  
+  // Database tables
+  let tablesHTML = '<table style="width:100%;border-collapse:collapse;">';
+  tablesHTML += '<tr style="background:var(--bg3);font-weight:600;"><td style="padding:8px;">Table</td><td style="text-align:right;">Rows</td><td style="text-align:right;">Size (MB)</td></tr>';
+  (data.tables || []).forEach(t => {
+    tablesHTML += `<tr style="border-bottom:1px solid var(--bd);"><td style="padding:8px;">${t.TABLE_NAME}</td><td style="text-align:right;">${(t.TABLE_ROWS||0).toLocaleString()}</td><td style="text-align:right;">${t.size_mb||0}</td></tr>`;
+  });
+  tablesHTML += '</table>';
+  $('sys-tables').innerHTML = tablesHTML;
+  
+  // Ping results stats
+  const pr = data.ping_results || {};
+  let pingHTML = '<div style="line-height:2.2;">';
+  pingHTML += `<div><strong>Total rows:</strong> ${(pr.total||0).toLocaleString()}</div>`;
+  pingHTML += `<div><strong>Oldest data:</strong> ${pr.oldest || '—'}</div>`;
+  pingHTML += `<div><strong>Newest data:</strong> ${pr.newest || '—'}</div>`;
+  pingHTML += `<div><strong>Hosts monitored:</strong> ${pr.hosts_with_data || 0}</div>`;
+  const days = pr.oldest ? Math.floor((new Date(pr.newest) - new Date(pr.oldest))/(1000*60*60*24)) : 0;
+  pingHTML += `<div><strong>Data span:</strong> ${days} days</div>`;
+  pingHTML += '</div>';
+  $('sys-ping-stats').innerHTML = pingHTML;
+  
+  // MySQL stats
+  const mysql = data.mysql || {};
+  let mysqlHTML = '';
+  const importantKeys = ['max_connections', 'Threads_connected', 'Max_used_connections', 'Aborted_connects'];
+  importantKeys.forEach(key => {
+    if (mysql[key]) {
+      mysqlHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);text-transform:uppercase;">${key.replace(/_/g,' ')}</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${mysql[key]}</div></div>`;
+    }
+  });
+  $('sys-mysql').innerHTML = mysqlHTML || '<div style="color:var(--tx3);">No MySQL stats available</div>';
+  
+  // System info
+  const sys = data.system || {};
+  let sysHTML = '';
+  sysHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);">PROCESS PID</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${sys.process_pid||'—'}</div></div>`;
+  const uptime = sys.uptime_seconds ? Math.floor(sys.uptime_seconds / 3600) + 'h ' + Math.floor((sys.uptime_seconds % 3600) / 60) + 'm' : '—';
+  sysHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);">UPTIME</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${uptime}</div></div>`;
+  sysHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);">ACTIVE MONITORS</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${sys.active_monitors||0}</div></div>`;
+  sysHTML += `<div style="background:var(--bg3);padding:10px;border-radius:6px;"><div style="font-size:9px;color:var(--tx3);">TOTAL HOSTS</div><div style="font-size:18px;font-weight:700;color:var(--acc);margin-top:4px;">${sys.total_hosts||0}</div></div>`;
+  $('sys-info').innerHTML = sysHTML;
+}
+
+async function setPerfMode(mode) {
+  const r = await P('/api/admin/performance', { mode });
+  if (r?.success) {
+    toast(`✅ Performance mode set to: ${mode.replace('_',' ')}`, 'ok');
+    await loadSystemDashboard();
+  } else {
+    toast('Error: ' + (r?.error || 'Unknown'), 'er');
+  }
+}
+
+async function runCleanup() {
+  if (!confirm('Run data cleanup now? This will delete ping_results older than 7 days in the background.')) return;
+  const r = await P('/api/admin/cleanup', {});
+  if (r?.success) {
+    toast('✅ Cleanup started in background. Check logs for progress.', 'ok');
+    setTimeout(loadSystemDashboard, 5000); // Refresh after 5 seconds
+  } else {
+    toast('Error: ' + (r?.error || 'Unknown'), 'er');
+  }
+}
+
 </script>
 </body>
-</html>
+</html>>

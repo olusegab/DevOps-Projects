@@ -1118,6 +1118,7 @@ def get_stats(host_id, hours):
 # ── ADAPTIVE PERFORMANCE CONTROL ────────────────────────────────
 # Automatically enables/disables expensive features based on table size
 _performance_mode = None  # 'fast' or 'slow' - determined at runtime
+_performance_override = None  # 'auto', 'force_fast', or 'force_slow' - admin control
 _last_perf_check = None
 _PERF_CHECK_INTERVAL = 300  # Check every 5 minutes
 
@@ -1126,8 +1127,15 @@ def check_performance_mode():
     Determines if expensive queries (report cache, uptime calcs) should run.
     Returns 'fast' if ping_results < 1M rows, 'slow' otherwise.
     Caches result for 5 minutes to avoid constant DB checks.
+    Can be overridden by admin via /api/admin/performance endpoint.
     """
-    global _performance_mode, _last_perf_check
+    global _performance_mode, _last_perf_check, _performance_override
+    
+    # Admin override takes precedence
+    if _performance_override == 'force_fast':
+        return 'fast'
+    elif _performance_override == 'force_slow':
+        return 'slow'
     
     now = datetime.now()
     if _last_perf_check and (now - _last_perf_check).total_seconds() < _PERF_CHECK_INTERVAL:
@@ -1145,7 +1153,7 @@ def check_performance_mode():
         _performance_mode = 'fast' if row_count < 1000000 else 'slow'
         _last_perf_check = now
         
-        if old_mode != _performance_mode:
+        if old_mode != _performance_mode and _performance_override == 'auto':
             log.info(f'Performance mode switched to {_performance_mode} '
                     f'(ping_results: {row_count:,} rows)')
         
@@ -1153,6 +1161,61 @@ def check_performance_mode():
     except Exception as e:
         log.error(f'Performance check failed: {e}')
         return 'slow'  # Safe default
+
+def get_system_stats():
+    """Gather comprehensive system statistics for admin dashboard."""
+    try:
+        stats = {}
+        
+        # Database table sizes
+        tables = db_all("""
+            SELECT TABLE_NAME, TABLE_ROWS, 
+                   ROUND(DATA_LENGTH/1024/1024, 2) as size_mb,
+                   ROUND(INDEX_LENGTH/1024/1024, 2) as index_mb
+            FROM information_schema.TABLES 
+            WHERE TABLE_SCHEMA='abayonetDB'
+            ORDER BY DATA_LENGTH DESC""")
+        stats['tables'] = [dict(t) for t in tables]
+        
+        # Ping results age distribution
+        ping_stats = db_one("""
+            SELECT COUNT(*) as total,
+                   MIN(timestamp) as oldest,
+                   MAX(timestamp) as newest,
+                   COUNT(DISTINCT host_id) as hosts_with_data
+            FROM ping_results""")
+        stats['ping_results'] = dict(ping_stats) if ping_stats else {}
+        
+        # MySQL connection stats
+        mysql_stats = {}
+        mysql_vars = db_all("SHOW VARIABLES LIKE '%connection%'")
+        for v in mysql_vars:
+            mysql_stats[v['Variable_name']] = v['Value']
+        mysql_status = db_all("SHOW STATUS LIKE '%connection%'")
+        for v in mysql_status:
+            mysql_stats[v['Variable_name']] = v['Value']
+        stats['mysql'] = mysql_stats
+        
+        # Performance mode info
+        stats['performance'] = {
+            'current_mode': _performance_mode or 'unknown',
+            'override': _performance_override or 'auto',
+            'last_check': _last_perf_check.isoformat() if _last_perf_check else None
+        }
+        
+        # System uptime and stats
+        import os
+        stats['system'] = {
+            'process_pid': os.getpid(),
+            'uptime_seconds': time.time() - _t0,
+            'active_monitors': len(_hthreads),
+            'total_hosts': db_one('SELECT COUNT(*) as c FROM hosts')['c']
+        }
+        
+        return stats
+    except Exception as e:
+        log.error(f'System stats error: {e}')
+        return {'error': str(e)}
 
 # ── REPORT CACHE ─────────────────────────────────────────────────
 # Cache is rebuilt in a background thread every 5 minutes.
@@ -2184,6 +2247,36 @@ class H(BaseHTTPRequestHandler):
                 if not is_admin: self.json({'error':'Admin only'},403); return
                 for k,v in b.items(): db_exec('INSERT OR REPLACE INTO settings(`key`,`value`) VALUES(?,?)',(k,str(v)))
                 self.json({'success':True}); return
+
+            # ADMIN SYSTEM DASHBOARD
+            if path=='/api/admin/system':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                self.json(get_system_stats()); return
+
+            # ADMIN PERFORMANCE CONTROL
+            if path=='/api/admin/performance':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                global _performance_override, _performance_mode, _last_perf_check
+                mode = b.get('mode', 'auto')  # 'auto', 'force_fast', 'force_slow'
+                if mode not in ['auto', 'force_fast', 'force_slow']:
+                    self.json({'error': 'Invalid mode. Use: auto, force_fast, or force_slow'}, 400); return
+                _performance_override = mode
+                _last_perf_check = None  # Force immediate re-check
+                actual_mode = check_performance_mode()
+                log.info(f'Admin set performance override to {mode} (actual mode: {actual_mode})')
+                self.json({'success': True, 'override': mode, 'actual_mode': actual_mode}); return
+
+            # ADMIN FORCE CLEANUP
+            if path=='/api/admin/cleanup':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                def _run_cleanup():
+                    try:
+                        run_cleanup(forced=True)
+                        log.info('Admin triggered manual cleanup completed')
+                    except Exception as e:
+                        log.error(f'Admin cleanup error: {e}')
+                threading.Thread(target=_run_cleanup, daemon=True, name='admin-cleanup').start()
+                self.json({'success': True, 'message': 'Cleanup started in background'}); return
 
             # MAINTENANCE
             if path=='/api/maintenance':
