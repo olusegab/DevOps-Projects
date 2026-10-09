@@ -1174,7 +1174,7 @@ def snmp_bandwidth_monitor_loop():
                 
                 # Get monitored interfaces for this host
                 interfaces = db_all(
-                    'SELECT if_index, if_speed_bps FROM interfaces WHERE host_id=? AND monitored=1',
+                    'SELECT if_index, if_speed_bps FROM interfaces WHERE host_id=%s AND monitored=1',
                     (host_id,)
                 )
                 
@@ -1213,7 +1213,7 @@ def snmp_bandwidth_monitor_loop():
                                 db_exec("""
                                     INSERT INTO bandwidth_results 
                                     (host_id, if_index, in_bps, out_bps)
-                                    VALUES (?, ?, ?, ?)
+                                    VALUES (%s, %s, %s, %s)
                                 """, (host_id, if_index, in_bps, out_bps))
                             except Exception as e:
                                 log.error(f'Failed to store bandwidth data for host {host_id} if{if_index}: {e}')
