@@ -276,6 +276,12 @@ def utc_now_str():
 def utc_since_str(hours=0, days=0, minutes=0):
     return (datetime.now() - timedelta(hours=hours, days=days, minutes=minutes)).strftime('%Y-%m-%d %H:%M:%S')
 
+def to_float(val):
+    """Convert Decimal/int/float/None to float for arithmetic operations."""
+    if val is None:
+        return 0.0
+    return float(val)
+
 def cfg(key, default=''):
     try:
         r = db_one('SELECT `value` FROM settings WHERE `key`=?', (key,))
@@ -1510,12 +1516,12 @@ def get_period_report_html(period_days=7, period_label='Weekly', uptime_key='upt
     period_end   = datetime.now().strftime('%d %b %Y')
     total   = len(report)
     online  = sum(1 for h in report if h['current_status']=='online')
-    avg_up  = round(sum(h[uptime_key] for h in report)/total,2) if total else 0
+    avg_up  = round(sum(to_float(h[uptime_key]) for h in report)/total,2) if total else 0
     total_inc = sum(h['incidents'] for h in report)
 
     rows = ''
     for h in report:
-        up = h[uptime_key]
+        up = to_float(h[uptime_key])
         up_color = '#16a34a' if up>=99 else '#d97706' if up>=95 else '#dc2626'
         st_color = '#16a34a' if h['current_status']=='online' else '#dc2626' if h['current_status']=='offline' else '#6b7280'
         rows += f"""
@@ -1526,13 +1532,13 @@ def get_period_report_html(period_days=7, period_label='Weekly', uptime_key='upt
           <td>{h['location'] or '—'}</td>
           <td style="color:{st_color};font-weight:700;text-transform:uppercase;">{h['current_status']}</td>
           <td style="color:{up_color};font-weight:700;">{up:.3f}%</td>
-          <td>{h['uptime_1d']:.3f}%</td>
-          <td style="font-family:monospace;">{h['avg_latency'] if h['avg_latency'] else '—'} ms</td>
-          <td style="font-family:monospace;">{h['min_latency'] if h['min_latency'] else '—'} ms</td>
-          <td style="font-family:monospace;">{h['max_latency'] if h['max_latency'] else '—'} ms</td>
-          <td style="font-family:monospace;">{h['avg_loss'] if h['avg_loss'] else '0.0'}%</td>
+          <td>{to_float(h['uptime_1d']):.3f}%</td>
+          <td style="font-family:monospace;">{to_float(h['avg_latency']) if h['avg_latency'] else '—'} ms</td>
+          <td style="font-family:monospace;">{to_float(h['min_latency']) if h['min_latency'] else '—'} ms</td>
+          <td style="font-family:monospace;">{to_float(h['max_latency']) if h['max_latency'] else '—'} ms</td>
+          <td style="font-family:monospace;">{to_float(h['avg_loss']) if h['avg_loss'] else '0.0'}%</td>
           <td style="{'color:#dc2626;font-weight:700;' if h['incidents']>0 else ''}">{h['incidents']}</td>
-          <td style="font-family:monospace;">{h['downtime_mins']} min</td>
+          <td style="font-family:monospace;">{to_float(h['downtime_mins'])} min</td>
         </tr>"""
 
     # Recent alerts for the past 7 days
