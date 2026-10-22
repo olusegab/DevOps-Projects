@@ -2107,8 +2107,8 @@ function buildBandwidthChart(hist) {
     data: {
       labels,
       datasets: [
-        { label: 'Download (in)', data: inData,  borderColor:'#00c8ff', backgroundColor:gradIn,  fill:true, tension:0.35, pointRadius:0, pointHoverRadius:3, borderWidth:1.8, spanGaps:true },
-        { label: 'Upload (out)',  data: outData, borderColor:'#ff8c00', backgroundColor:gradOut, fill:true, tension:0.35, pointRadius:0, pointHoverRadius:3, borderWidth:1.8, spanGaps:true }
+        { label: 'Download (in)', data: inData,  borderColor:'#00c8ff', backgroundColor:gradIn,  fill:true, tension:0.4, pointRadius:1, pointHoverRadius:4, borderWidth:2, spanGaps:true },
+        { label: 'Upload (out)',  data: outData, borderColor:'#ff8c00', backgroundColor:gradOut, fill:true, tension:0.4, pointRadius:1, pointHoverRadius:4, borderWidth:2, spanGaps:true }
       ]
     },
     options: {

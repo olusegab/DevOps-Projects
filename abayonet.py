@@ -2509,17 +2509,31 @@ class H(BaseHTTPRequestHandler):
             
             if '/bandwidth' in path:
                 hid=int(path.split('/')[3])
-                # Get bandwidth data from bandwidth_results table
-                since = qp('since', utc_since_str(hours=24))
+                if_index = qp('if_index', None)
+                hours = int(qp('hours', '24'))
+                since = utc_since_str(hours=hours)
                 limit = int(qp('limit', '1000'))
-                bw_data = db_all('''
+                
+                # Build WHERE clause
+                where_parts = ['b.host_id=%s', 'b.timestamp>%s']
+                params = [hid, since]
+                
+                if if_index:
+                    where_parts.append('b.if_index=%s')
+                    params.append(int(if_index))
+                
+                where_clause = ' AND '.join(where_parts)
+                params.append(limit)
+                
+                # Get bandwidth data from bandwidth_results table
+                bw_data = db_all(f'''
                     SELECT b.timestamp, b.if_index, b.in_bps, b.out_bps,
                            i.if_name, i.if_speed_bps
                     FROM bandwidth_results b
                     LEFT JOIN interfaces i ON b.host_id=i.host_id AND b.if_index=i.if_index
-                    WHERE b.host_id=? AND b.timestamp>?
-                    ORDER BY b.timestamp DESC, b.if_index ASC
-                    LIMIT ?''', (hid, since, limit))
+                    WHERE {where_clause}
+                    ORDER BY b.timestamp ASC
+                    LIMIT %s''', tuple(params))
                 self.json([dict(r) for r in bw_data]); return
 
             # ALERTS
