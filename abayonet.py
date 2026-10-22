@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-AbayoNet Enterprise Network Monitor v4.0
+AbayoNet Enterprise Network Monitor v10.0
 Fixes: Database lock (per-thread connection pool)
 New:   Login page, Admin/ReadOnly users, User management, Host import/export
+       Enhanced security: rate limiting, audit logging, input validation
 """
 import os, sys, threading, time, json, subprocess, platform, queue
 import socket, re, smtplib, logging, csv, io, ipaddress, hashlib, secrets
 import webbrowser
 import decimal
+from collections import defaultdict, deque
 # NOTE: MySQL support (pymysql) is imported further down, once _BASE_DIR
 # and the logger are set up, since read_db_config() needs both.
 from datetime import datetime, timedelta
@@ -45,6 +47,112 @@ logging.basicConfig(
 )
 log = logging.getLogger('AbayoNet')
 VERSION = '10.0'
+
+# ═══════════════════════════════════════════════════════════════
+# SECURITY CONFIGURATION
+# ═══════════════════════════════════════════════════════════════
+# Rate limiting: track failed login attempts by IP
+_login_attempts = defaultdict(lambda: deque(maxlen=10))  # IP -> deque of timestamps
+_request_counts = defaultdict(lambda: deque(maxlen=100))  # IP -> deque of timestamps
+_login_attempt_lock = threading.Lock()
+
+# Security settings
+MAX_LOGIN_ATTEMPTS = 5  # Max failed attempts before temporary lockout
+LOGIN_LOCKOUT_MINUTES = 15  # Lockout duration
+MAX_REQUESTS_PER_MINUTE = 120  # General rate limit per IP
+SESSION_TIMEOUT_HOURS = 24  # Session expiration
+PASSWORD_MIN_LENGTH = 8  # Minimum password length
+
+# Audit log for security events
+_audit_log = deque(maxlen=1000)  # Keep last 1000 security events
+_audit_lock = threading.Lock()
+
+def audit_log(event_type, username, ip, details='', success=True):
+    """Log security-related events"""
+    with _audit_lock:
+        _audit_log.append({
+            'timestamp': datetime.now().isoformat(),
+            'type': event_type,
+            'username': username,
+            'ip': ip,
+            'details': details,
+            'success': success
+        })
+        log.info(f'AUDIT: {event_type} | user={username} ip={ip} success={success} | {details}')
+
+def check_rate_limit(ip, limit_type='general'):
+    """Check if IP is rate limited. Returns (allowed, wait_seconds)"""
+    now = time.time()
+    
+    with _login_attempt_lock:
+        if limit_type == 'login':
+            attempts = _login_attempts[ip]
+            # Remove attempts older than lockout period
+            while attempts and now - attempts[0] > LOGIN_LOCKOUT_MINUTES * 60:
+                attempts.popleft()
+            
+            if len(attempts) >= MAX_LOGIN_ATTEMPTS:
+                wait_time = int(LOGIN_LOCKOUT_MINUTES * 60 - (now - attempts[0]))
+                return False, max(1, wait_time)
+            return True, 0
+        
+        else:  # general rate limiting
+            requests = _request_counts[ip]
+            # Remove requests older than 1 minute
+            while requests and now - requests[0] > 60:
+                requests.popleft()
+            
+            if len(requests) >= MAX_REQUESTS_PER_MINUTE:
+                return False, 60
+            
+            requests.append(now)
+            return True, 0
+
+def record_failed_login(ip):
+    """Record a failed login attempt"""
+    now = time.time()
+    with _login_attempt_lock:
+        _login_attempts[ip].append(now)
+
+def clear_failed_logins(ip):
+    """Clear failed login attempts for IP (on successful login)"""
+    with _login_attempt_lock:
+        if ip in _login_attempts:
+            _login_attempts[ip].clear()
+
+def validate_ip_address(ip):
+    """Validate IP address format"""
+    try:
+        ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False
+
+def validate_email(email):
+    """Basic email validation"""
+    if not email:
+        return True  # Email is optional
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(pattern, email))
+
+def sanitize_input(text, max_length=500):
+    """Sanitize user input to prevent injection attacks"""
+    if not text:
+        return ''
+    # Remove null bytes and control characters except newline/tab
+    text = ''.join(char for char in str(text) if char >= ' ' or char in '\n\t')
+    # Trim to max length
+    return text[:max_length].strip()
+
+def validate_password_strength(password):
+    """Validate password meets minimum requirements"""
+    if len(password) < PASSWORD_MIN_LENGTH:
+        return False, f'Password must be at least {PASSWORD_MIN_LENGTH} characters'
+    if not any(c.isdigit() for c in password):
+        return False, 'Password must contain at least one number'
+    if not any(c.isalpha() for c in password):
+        return False, 'Password must contain at least one letter'
+    return True, 'OK'
 
 def _json_fallback(o):
     """json.dumps(..., default=...) hook.
@@ -2010,6 +2118,13 @@ class H(BaseHTTPRequestHandler):
     def log_message(self,*a): pass
 
     def cors(self):
+        # Security headers
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'DENY')
+        self.send_header('X-XSS-Protection', '1; mode=block')
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
+        self.send_header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
+        # CORS headers (restrict in production)
         self.send_header('Access-Control-Allow-Origin','*')
         self.send_header('Access-Control-Allow-Methods','GET,POST,PUT,DELETE,OPTIONS')
         self.send_header('Access-Control-Allow-Headers','Content-Type,Authorization')
@@ -2093,6 +2208,13 @@ class H(BaseHTTPRequestHandler):
         self.send_response(200); self.cors(); self.end_headers()
 
     def do_GET(self):
+        # General rate limiting
+        ip = self.client_address[0]
+        allowed, wait_time = check_rate_limit(ip, 'general')
+        if not allowed:
+            self.json({'error': 'Rate limit exceeded. Please slow down.'}, 429)
+            return
+        
         path=urlparse(self.path).path
         qs=parse_qs(urlparse(self.path).query)
         def qp(k,d=''): return qs.get(k,[d])[0]
@@ -2468,7 +2590,37 @@ class H(BaseHTTPRequestHandler):
             # ADMIN SYSTEM DASHBOARD
             if path=='/api/admin/system':
                 if not is_admin: self.json({'error':'Admin only'},403); return
-                self.json(get_system_stats()); return
+                stats = get_system_stats()
+                # Add security stats
+                with _audit_lock:
+                    stats['audit_log_count'] = len(_audit_log)
+                with _login_attempt_lock:
+                    locked_ips = sum(1 for ip, attempts in _login_attempts.items() 
+                                    if len(attempts) >= MAX_LOGIN_ATTEMPTS)
+                    stats['locked_ips'] = locked_ips
+                self.json(stats); return
+            
+            # ADMIN: View audit logs
+            if path=='/api/admin/audit':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                try:
+                    limit = min(500, int(qp('limit', 100)))
+                    event_type = qp('type', '')
+                    
+                    with _audit_lock:
+                        logs = list(_audit_log)
+                    
+                    # Filter by type if specified
+                    if event_type:
+                        logs = [log for log in logs if log['type'] == event_type]
+                    
+                    # Return most recent first, limited
+                    logs.reverse()
+                    self.json({'logs': logs[:limit], 'total': len(_audit_log)})
+                except Exception as e:
+                    log.error(f'Audit log error: {e}')
+                    self.json({'error': str(e)}, 500)
+                return
             
             # ADMIN CLEANUP STATUS
             if path=='/api/admin/cleanup/status':
@@ -2489,32 +2641,70 @@ class H(BaseHTTPRequestHandler):
             close_thread_db()
 
     def do_POST(self):
+        # General rate limiting
+        ip = self.client_address[0]
+        allowed, wait_time = check_rate_limit(ip, 'general')
+        if not allowed:
+            self.json({'error': 'Rate limit exceeded. Please slow down.'}, 429)
+            return
+        
         path=urlparse(self.path).path
 
         # PUBLIC: Login
         if path=='/api/auth/login':
             try:
-                b=self.body(); ip=self.client_address[0]
-                u=db_one('SELECT * FROM users WHERE username=? AND active=1',(b.get('username','').strip(),))
-                if not u or u['password']!=hashpw(b.get('password','')):
-                    log.warning(f'Failed login: {b.get("username")} from {ip}')
-                    self.json({'error':'Invalid username or password'},401); return
-                token=make_session(u['id'],u['username'],u['role'],ip)
+                b=self.body()
+                ip=self.client_address[0]
+                username = sanitize_input(b.get('username', '').strip(), 100)
+                password = b.get('password', '')
+                
+                # Check rate limiting
+                allowed, wait_time = check_rate_limit(ip, 'login')
+                if not allowed:
+                    audit_log('login_rate_limited', username, ip, f'Too many attempts, locked out for {wait_time}s', False)
+                    self.json({'error': f'Too many failed attempts. Please try again in {wait_time} seconds.'}, 429)
+                    return
+                
+                # Validate input
+                if not username or not password:
+                    audit_log('login_failed', username, ip, 'Empty credentials', False)
+                    self.json({'error':'Invalid username or password'}, 401)
+                    return
+                
+                # Check credentials
+                u=db_one('SELECT * FROM users WHERE username=%s AND active=1', (username,))
+                if not u or u['password']!=hashpw(password):
+                    record_failed_login(ip)
+                    audit_log('login_failed', username, ip, 'Invalid credentials', False)
+                    log.warning(f'Failed login: {username} from {ip}')
+                    self.json({'error':'Invalid username or password'}, 401)
+                    return
+                
+                # Successful login
+                clear_failed_logins(ip)
+                token=make_session(u['id'], u['username'], u['role'], ip)
+                audit_log('login_success', u['username'], ip, f'Role: {u["role"]}', True)
                 log.info(f'Login: {u["username"]} ({u["role"]}) from {ip}')
-                self.json({'success':True,'token':token,'username':u['username'],'role':u['role'],'full_name':u['full_name']})
+                self.json({'success':True, 'token':token, 'username':u['username'], 'role':u['role'], 'full_name':u['full_name']})
             except Exception as e:
                 # Log the real error server-side, but never hand raw
                 # exception text (e.g. internal DB error strings) back to
                 # an unauthenticated client on the login screen.
                 log.error(f'Login error: {e}')
-                self.json({'error':'Login failed — please try again'},500)
+                audit_log('login_error', b.get('username', 'unknown'), self.client_address[0], str(e), False)
+                self.json({'error':'Login failed — please try again'}, 500)
             return
 
         # PUBLIC: Logout
         if path=='/api/auth/logout':
             token=get_token(self)
-            if token: db_exec('DELETE FROM sessions WHERE token=?',(token,))
-            self.json({'success':True}); return
+            if token:
+                sess = check_session(token)
+                if sess and sess != 'ERR':
+                    audit_log('logout', sess['username'], self.client_address[0], '', True)
+                db_exec('DELETE FROM sessions WHERE token=%s', (token,))
+            self.json({'success':True})
+            return
 
         sess=auth(self)
         if not sess: return
@@ -2524,14 +2714,36 @@ class H(BaseHTTPRequestHandler):
             # ADD HOST
             if path=='/api/hosts':
                 if not is_admin: self.json({'error':'Admin only'},403); return
-                ip=b.get('ip','').strip()
-                if not ip: self.json({'error':'IP required'},400); return
-                name=b.get('name','').strip() or resolve(ip) or ip
-                db_exec('INSERT INTO hosts(ip,name,group_name,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
-                    (ip,name,b.get('group','Default'),b.get('tags',''),b.get('description',''),b.get('location',''),
-                     b.get('alert_email',''),max(10,int(b.get('interval',30))),min(20,max(1,int(b.get('packet_count',4)))),
-                     int(b.get('timeout_ms',1000)),b.get('port_checks',''),b.get('notes','')))
-                h=dict(db_one('SELECT * FROM hosts WHERE ip=?',(ip,)))
+                ip=sanitize_input(b.get('ip','').strip(), 50)
+                
+                # Validate IP address
+                if not ip or not validate_ip_address(ip):
+                    self.json({'error':'Valid IP address required'},400); return
+                
+                # Validate email if provided
+                alert_email = sanitize_input(b.get('alert_email',''), 200)
+                if alert_email and not validate_email(alert_email):
+                    self.json({'error':'Invalid email address format'},400); return
+                
+                # Sanitize all text inputs
+                name=sanitize_input(b.get('name','').strip() or resolve(ip) or ip, 200)
+                group=sanitize_input(b.get('group','Default'), 100)
+                tags=sanitize_input(b.get('tags',''), 500)
+                description=sanitize_input(b.get('description',''), 500)
+                location=sanitize_input(b.get('location',''), 200)
+                notes=sanitize_input(b.get('notes',''), 2000)
+                port_checks=sanitize_input(b.get('port_checks',''), 500)
+                
+                # Validate numeric inputs
+                ping_interval=max(10,int(b.get('interval',30)))
+                packet_count=min(20,max(1,int(b.get('packet_count',4))))
+                timeout_ms=min(10000,max(100,int(b.get('timeout_ms',1000))))
+                
+                audit_log('host_add', sess['username'], ip, f'Added host {name} ({ip})', True)
+                
+                db_exec('INSERT INTO hosts(ip,name,group_name,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,notes) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                    (ip,name,group,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,notes))
+                h=dict(db_one('SELECT * FROM hosts WHERE ip=%s',(ip,)))
                 start_monitor(h); self.json({'success':True,'host':h}); return
 
             # TOGGLE HOST
@@ -2539,12 +2751,18 @@ class H(BaseHTTPRequestHandler):
                 if not is_admin: self.json({'error':'Admin only'},403); return
                 hid=int(path.split('/')[-2])
                 enabled=int(b.get('enabled',1))
-                db_exec('UPDATE hosts SET enabled=? WHERE id=?',(enabled,hid))
+                
+                host = db_one('SELECT name, ip FROM hosts WHERE id=%s', (hid,))
+                action = 'enabled' if enabled else 'disabled'
+                audit_log('host_toggle', sess['username'], self.client_address[0], 
+                         f'{action.capitalize()} host {host["name"]} ({host["ip"]})', True)
+                
+                db_exec('UPDATE hosts SET enabled=%s WHERE id=%s',(enabled,hid))
                 # Actually start/stop the live monitor thread to match the new
                 # enabled state — previously this only updated the DB flag, so
                 # a "disabled" host kept being pinged until the app restarted.
                 if enabled:
-                    h=db_one('SELECT * FROM hosts WHERE id=?',(hid,))
+                    h=db_one('SELECT * FROM hosts WHERE id=%s',(hid,))
                     if h: start_monitor(dict(h))
                 else:
                     stop_monitor(hid)
@@ -2553,9 +2771,12 @@ class H(BaseHTTPRequestHandler):
             # BULK DELETE
             if path=='/api/hosts/bulk_delete':
                 if not is_admin: self.json({'error':'Admin only'},403); return
-                for hid in b.get('ids',[]):
+                ids = b.get('ids',[])
+                audit_log('host_bulk_delete', sess['username'], self.client_address[0], 
+                         f'Deleted {len(ids)} hosts', True)
+                for hid in ids:
                     stop_monitor(hid)
-                    db_exec('DELETE FROM hosts WHERE id=?',(hid,))
+                    db_exec('DELETE FROM hosts WHERE id=%s',(hid,))
                 self.json({'success':True}); return
 
             # IMPORT HOSTS
@@ -2716,16 +2937,31 @@ class H(BaseHTTPRequestHandler):
             # CREATE USER (admin)
             if path=='/api/users':
                 if not is_admin: self.json({'error':'Admin only'},403); return
-                uname=b.get('username','').strip()
+                uname=sanitize_input(b.get('username','').strip(), 100)
                 if not uname: self.json({'error':'Username required'},400); return
+                
                 pwd=b.get('password','')
-                if len(pwd)<6: self.json({'error':'Password must be at least 6 characters'},400); return
+                valid, msg = validate_password_strength(pwd)
+                if not valid:
+                    self.json({'error':msg},400); return
+                
                 role=b.get('role','readonly')
-                if role not in ('admin','readonly'): self.json({'error':'Role must be admin or readonly'},400); return
-                if db_one('SELECT id FROM users WHERE username=?',(uname,)):
+                if role not in ('admin','readonly'): 
+                    self.json({'error':'Role must be admin or readonly'},400); return
+                
+                if db_one('SELECT id FROM users WHERE username=%s',(uname,)):
                     self.json({'error':'Username already exists'},409); return
-                db_exec('INSERT INTO users(username,password,role,full_name,email) VALUES(?,?,?,?,?)',
-                    (uname,hashpw(pwd),role,b.get('full_name',''),b.get('email','')))
+                
+                full_name=sanitize_input(b.get('full_name',''), 200)
+                email=sanitize_input(b.get('email',''), 200)
+                
+                if email and not validate_email(email):
+                    self.json({'error':'Invalid email format'},400); return
+                
+                db_exec('INSERT INTO users(username,password,role,full_name,email) VALUES(%s,%s,%s,%s,%s)',
+                    (uname,hashpw(pwd),role,full_name,email))
+                audit_log('user_create', sess['username'], self.client_address[0], 
+                         f'Created user {uname} with role {role}', True)
                 log.info(f'User created: {uname} ({role}) by {sess["username"]}')
                 self.json({'success':True}); return
 
@@ -2733,7 +2969,12 @@ class H(BaseHTTPRequestHandler):
             if path.startswith('/api/users/') and path.endswith('/toggle'):
                 if not is_admin: self.json({'error':'Admin only'},403); return
                 uid=int(path.split('/')[-2])
-                db_exec('UPDATE users SET active=? WHERE id=?',(int(b.get('active',1)),uid))
+                active=int(b.get('active',1))
+                user=db_one('SELECT username FROM users WHERE id=%s',(uid,))
+                action = 'activated' if active else 'deactivated'
+                audit_log('user_toggle', sess['username'], self.client_address[0], 
+                         f'{action.capitalize()} user {user["username"]}', True)
+                db_exec('UPDATE users SET active=%s WHERE id=%s',(active,uid))
                 self.json({'success':True}); return
 
             # RESET PASSWORD (admin)
@@ -2741,19 +2982,29 @@ class H(BaseHTTPRequestHandler):
                 if not is_admin: self.json({'error':'Admin only'},403); return
                 uid=int(path.split('/')[-2])
                 pwd=b.get('password','')
-                if len(pwd)<6: self.json({'error':'Password too short'},400); return
-                db_exec('UPDATE users SET password=? WHERE id=?',(hashpw(pwd),uid))
-                db_exec('DELETE FROM sessions WHERE user_id=?',(uid,))
+                valid, msg = validate_password_strength(pwd)
+                if not valid:
+                    self.json({'error':msg},400); return
+                user=db_one('SELECT username FROM users WHERE id=%s',(uid,))
+                audit_log('password_reset', sess['username'], self.client_address[0], 
+                         f'Reset password for user {user["username"]}', True)
+                db_exec('UPDATE users SET password=%s WHERE id=%s',(hashpw(pwd),uid))
+                db_exec('DELETE FROM sessions WHERE user_id=%s',(uid,))
                 self.json({'success':True}); return
 
             # CHANGE OWN PASSWORD
             if path=='/api/users/change_password':
                 old=b.get('old_password',''); new=b.get('new_password','')
-                if len(new)<6: self.json({'error':'Password too short'},400); return
-                u=db_one('SELECT * FROM users WHERE username=?',(sess['username'],))
+                valid, msg = validate_password_strength(new)
+                if not valid:
+                    self.json({'error':msg},400); return
+                u=db_one('SELECT * FROM users WHERE username=%s',(sess['username'],))
                 if not u or u['password']!=hashpw(old):
+                    audit_log('password_change_failed', sess['username'], self.client_address[0], 
+                             'Incorrect current password', False)
                     self.json({'error':'Current password incorrect'},401); return
-                db_exec('UPDATE users SET password=? WHERE username=?',(hashpw(new),sess['username']))
+                audit_log('password_change', sess['username'], self.client_address[0], '', True)
+                db_exec('UPDATE users SET password=%s WHERE username=%s',(hashpw(new),sess['username']))
                 self.json({'success':True}); return
 
             self.json({'error':'Not found'},404)
