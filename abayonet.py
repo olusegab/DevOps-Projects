@@ -3295,9 +3295,10 @@ def main():
     
     if not use_ssl:
         log.warning('⚠️  RUNNING IN HTTP MODE (no SSL) - NOT SECURE for internet access!')
-        log.warning('⚠️  To enable HTTPS, place SSL certificate files in:')
-        log.warning(f'    {os.path.join(_BASE_DIR, "ssl", "cert.pem")}')
-        log.warning(f'    {os.path.join(_BASE_DIR, "ssl", "key.pem")}')
+        log.warning('⚠️  To enable HTTPS:')
+        log.warning('    1. Run ./setup-https.sh to generate certificates, OR')
+        log.warning('    2. Use Admin Menu → Security Settings → Enable HTTPS')
+        log.warning(f'    Certificates should be in: {os.path.join(_BASE_DIR, "ssl")}')
 
     # Only open browser when run directly (not as service)
     if '--no-browser' not in sys.argv and '--service' not in sys.argv:
