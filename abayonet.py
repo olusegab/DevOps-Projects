@@ -1137,8 +1137,8 @@ async def _snmp_discover_interfaces_async(ip, community='public', timeout=5):
         transport = await UdpTransportTarget.create((ip, 161), timeout=timeout, retries=1)
         
         # Walk ifDescr to get interface names
-        OID_ifDescr = '1.3.6.1.2.1.2.2.1.2'
-        varBinds = [ObjectType(ObjectIdentity(OID_ifDescr))]
+        OID_ifDescr = ObjectIdentity('1.3.6.1.2.1.2.2.1.2')
+        varBinds = [ObjectType(OID_ifDescr)]
         
         while True:
             errorIndication, errorStatus, errorIndex, varBindTable = await next_cmd(
@@ -1154,29 +1154,38 @@ async def _snmp_discover_interfaces_async(ip, community='public', timeout=5):
                 break
             
             if errorStatus:
-                log.error(f'SNMP discovery error for {ip}: {errorStatus.prettyPrint()}')
+                # noSuchName or endOfMibView means we've reached the end - this is normal
+                log.debug(f'SNMP walk ended for {ip} at ifDescr: {errorStatus.prettyPrint()}')
                 break
             
-            # Parse interface names
+            # Check if we've left the OID tree
+            any_valid = False
             for varBind in varBindTable:
                 oid_str = str(varBind[0])
-                if OID_ifDescr in oid_str:
-                    if_index = int(oid_str.split('.')[-1])
-                    if_name = str(varBind[1])
-                    interfaces[if_index] = {
-                        'if_index': if_index,
-                        'if_name': if_name,
-                        'if_speed_bps': 1000000000  # Default, will update below
-                    }
+                # Check if still in ifDescr subtree
+                if '1.3.6.1.2.1.2.2.1.2.' in oid_str:
+                    try:
+                        if_index = int(oid_str.split('.')[-1])
+                        if_name = str(varBind[1])
+                        interfaces[if_index] = {
+                            'if_index': if_index,
+                            'if_name': if_name,
+                            'if_speed_bps': 1000000000  # Default, will update below
+                        }
+                        any_valid = True
+                    except (ValueError, IndexError):
+                        pass
             
-            # Check if we've reached the end
-            varBinds = varBindTable
-            if is_end_of_mib(varBinds):
+            # If no valid OIDs in this batch, we've walked past the end
+            if not any_valid:
                 break
+            
+            # Continue walking from last OID
+            varBinds = varBindTable
         
         # Walk ifSpeed to get interface speeds
-        OID_ifSpeed = '1.3.6.1.2.1.2.2.1.5'
-        varBinds = [ObjectType(ObjectIdentity(OID_ifSpeed))]
+        OID_ifSpeed = ObjectIdentity('1.3.6.1.2.1.2.2.1.5')
+        varBinds = [ObjectType(OID_ifSpeed)]
         
         while True:
             errorIndication, errorStatus, errorIndex, varBindTable = await next_cmd(
@@ -1188,22 +1197,25 @@ async def _snmp_discover_interfaces_async(ip, community='public', timeout=5):
             )
             
             if errorIndication or errorStatus:
+                # Speeds are optional, don't log errors
                 break
             
+            any_valid = False
             for varBind in varBindTable:
                 oid_str = str(varBind[0])
-                if OID_ifSpeed in oid_str:
-                    if_index = int(oid_str.split('.')[-1])
-                    if if_index in interfaces:
-                        try:
+                if '1.3.6.1.2.1.2.2.1.5.' in oid_str:
+                    try:
+                        if_index = int(oid_str.split('.')[-1])
+                        if if_index in interfaces:
                             interfaces[if_index]['if_speed_bps'] = int(varBind[1])
-                        except (ValueError, TypeError):
-                            pass
+                        any_valid = True
+                    except (ValueError, TypeError, IndexError):
+                        pass
             
-            # Check if we've reached the end
-            varBinds = varBindTable
-            if is_end_of_mib(varBinds):
+            if not any_valid:
                 break
+            
+            varBinds = varBindTable
     
     except Exception as e:
         log.error(f'Async SNMP discovery failed for {ip}: {e}')
