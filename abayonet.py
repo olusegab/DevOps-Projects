@@ -624,6 +624,23 @@ def init_db():
             c.execute(stmt)
     raw.commit()
 
+    # Add missing columns for SNMP functionality if they don't exist
+    try:
+        c.execute("ALTER TABLE hosts ADD COLUMN snmp_enabled TINYINT DEFAULT 0")
+        log.info('Added snmp_enabled column to hosts table')
+    except pymysql.err.OperationalError as e:
+        if 'Duplicate column name' not in str(e):
+            log.warning(f'Could not add snmp_enabled column: {e}')
+    
+    try:
+        c.execute("ALTER TABLE hosts ADD COLUMN snmp_port INT DEFAULT 161")
+        log.info('Added snmp_port column to hosts table')
+    except pymysql.err.OperationalError as e:
+        if 'Duplicate column name' not in str(e):
+            log.warning(f'Could not add snmp_port column: {e}')
+    
+    raw.commit()
+
     defaults = [
         ('smtp_host',''),('smtp_port','587'),('smtp_user',''),('smtp_pass',''),
         ('smtp_from',''),('smtp_tls','1'),('alert_cooldown','300'),
@@ -2064,7 +2081,7 @@ def import_json(data):
             if db_one('SELECT id FROM hosts WHERE ip=?', (ip,)):
                 skipped += 1; continue
             db_exec(
-                'INSERT INTO hosts(ip,name,group_name,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+                'INSERT INTO hosts(ip,name,group_name,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,snmp_enabled,snmp_community,snmp_port,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                 (ip,
                  h.get('name', ''),
                  h.get('group_name', h.get('group', 'Default')),
@@ -2076,6 +2093,9 @@ def import_json(data):
                  int(h.get('packet_count', 4)),
                  int(h.get('timeout_ms', 1000)),
                  h.get('port_checks', ''),
+                 1 if h.get('snmp_enabled') else 0,
+                 h.get('snmp_community', 'public'),
+                 int(h.get('snmp_port', 161)),
                  h.get('notes', '')))
             new = db_one('SELECT * FROM hosts WHERE ip=?', (ip,))
             if new: start_monitor(dict(new))
@@ -2743,8 +2763,9 @@ class H(BaseHTTPRequestHandler):
                 
                 audit_log('host_add', sess['username'], ip, f'Added host {name} ({ip})', True)
                 
-                db_exec('INSERT INTO hosts(ip,name,group_name,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,notes) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
-                    (ip,name,group,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,notes))
+                db_exec('INSERT INTO hosts(ip,name,group_name,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,snmp_enabled,snmp_community,snmp_port,notes) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',
+                    (ip,name,group,tags,description,location,alert_email,ping_interval,packet_count,timeout_ms,port_checks,
+                     1 if b.get('snmp_enabled') else 0,b.get('snmp_community','public'),int(b.get('snmp_port',161)),notes))
                 h=dict(db_one('SELECT * FROM hosts WHERE ip=%s',(ip,)))
                 start_monitor(h); self.json({'success':True,'host':h}); return
 
@@ -2802,10 +2823,12 @@ class H(BaseHTTPRequestHandler):
                 new_ip=b.get('ip','').strip()
                 if not new_ip: self.json({'error':'IP required'},400); return
                 try:
-                    db_exec('UPDATE hosts SET ip=?,name=?,group_name=?,tags=?,description=?,location=?,alert_email=?,ping_interval=?,packet_count=?,timeout_ms=?,port_checks=?,notes=? WHERE id=?',
+                    db_exec('UPDATE hosts SET ip=?,name=?,group_name=?,tags=?,description=?,location=?,alert_email=?,ping_interval=?,packet_count=?,timeout_ms=?,port_checks=?,snmp_enabled=?,snmp_community=?,snmp_port=?,notes=? WHERE id=?',
                         (new_ip,b.get('name',''),b.get('group','Default'),b.get('tags',''),b.get('description',''),b.get('location',''),
                          b.get('alert_email',''),max(10,int(b.get('interval',30))),min(20,max(1,int(b.get('packet_count',4)))),
-                         int(b.get('timeout_ms',1000)),b.get('port_checks',''),b.get('notes',''),hid))
+                         int(b.get('timeout_ms',1000)),b.get('port_checks',''),
+                         1 if b.get('snmp_enabled') else 0,b.get('snmp_community','public'),int(b.get('snmp_port',161)),
+                         b.get('notes',''),hid))
                 except pymysql.err.IntegrityError:
                     # `ip` has a UNIQUE constraint — give a clear message instead
                     # of a raw 500 error when the new IP collides with another host.
