@@ -3142,35 +3142,56 @@ def main():
     base_port = read_config_port() if base_port == 8780 else base_port
 
     PORT = base_port
+    server = None
+    use_ssl = False
+    
+    # Check for SSL certificate files first
+    ssl_cert = os.path.join(_BASE_DIR, 'ssl', 'cert.pem')
+    ssl_key = os.path.join(_BASE_DIR, 'ssl', 'key.pem')
+    ssl_context = None
+    
+    if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+        try:
+            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            ssl_context.load_cert_chain(ssl_cert, ssl_key)
+            # Recommended security settings
+            ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+            ssl_context.set_ciphers('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS')
+            use_ssl = True
+            log.info('✓ SSL certificates loaded successfully')
+        except Exception as e:
+            log.warning(f'SSL certificate found but could not be loaded: {e}')
+            log.warning('Falling back to HTTP mode')
+            ssl_context = None
+    
     for p in [base_port, base_port+1, base_port+2, 9100]:
         try:
             server = ThreadingHTTPServer(('0.0.0.0', p), H)
             server.timeout = 30
             server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             
-            # Check for SSL certificate files
-            ssl_cert = os.path.join(_BASE_DIR, 'ssl', 'cert.pem')
-            ssl_key = os.path.join(_BASE_DIR, 'ssl', 'key.pem')
-            use_ssl = False
-            
-            if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
-                try:
-                    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                    context.load_cert_chain(ssl_cert, ssl_key)
-                    # Recommended security settings
-                    context.minimum_version = ssl.TLSVersion.TLSv1_2
-                    context.set_ciphers('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20:!aNULL:!MD5:!DSS')
-                    server.socket = context.wrap_socket(server.socket, server_side=True)
-                    use_ssl = True
-                    log.info('✓ SSL/TLS enabled - HTTPS mode active')
-                except Exception as e:
-                    log.warning(f'SSL certificate found but could not be loaded: {e}')
-                    log.warning('Falling back to HTTP mode')
+            # Wrap socket with SSL if certificates are available
+            if ssl_context:
+                server.socket = ssl_context.wrap_socket(server.socket, server_side=True)
+                log.info('✓ SSL/TLS enabled - HTTPS mode active')
             
             PORT = p
             PROTOCOL = 'https' if use_ssl else 'http'
             break
-        except OSError:
+        except OSError as e:
+            if server:
+                try:
+                    server.server_close()
+                except:
+                    pass
+            continue
+        except Exception as e:
+            log.error(f'Error starting server on port {p}: {e}')
+            if server:
+                try:
+                    server.server_close()
+                except:
+                    pass
             continue
 
     # Record the port we actually bound so the launcher / service scripts
