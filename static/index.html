@@ -353,6 +353,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
   <div class="sbi adm" id="nav-transfer" onclick="nav('transfer')"><span class="sbic">📦</span><span class="sbtt">Import / Export</span></div>
   <div class="sbi"     id="nav-settings" onclick="nav('settings')"><span class="sbic">⚙</span><span class="sbtt">Settings</span></div>
   <div class="sbi adm" id="nav-system"   onclick="nav('system')">  <span class="sbic">🖥</span><span class="sbtt">System Dashboard</span></div>
+  <div class="sbi adm" id="nav-audit"    onclick="nav('audit')">   <span class="sbic">📋</span><span class="sbtt">Audit Log</span></div>
   <div class="sbl" style="margin-top:6px">Live Hosts</div>
   <div class="sbhosts" id="sb-hosts"></div>
   <div class="sbtog" id="sbtog" onclick="toggleSb()">◀</div>
@@ -886,6 +887,73 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
   </div>
 </div>
 
+<!-- ── AUDIT LOG (ADMIN ONLY) ── -->
+<div class="page" id="page-audit">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);margin-bottom:12px;">📋 Security Audit Log</div>
+  
+  <!-- Filters -->
+  <div class="card">
+    <div class="ct">🔍 Filters</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Event Type</label>
+        <select id="audit-type-filter" onchange="loadAuditLog()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;color:var(--tx);font-size:12px;width:100%;">
+          <option value="">All Events</option>
+          <option value="login_success">Login Success</option>
+          <option value="login_failed">Login Failed</option>
+          <option value="login_rate_limited">Rate Limited</option>
+          <option value="logout">Logout</option>
+          <option value="user_create">User Created</option>
+          <option value="user_toggle">User Activated/Deactivated</option>
+          <option value="password_reset">Password Reset</option>
+          <option value="password_change">Password Changed</option>
+          <option value="host_add">Host Added</option>
+          <option value="host_toggle">Host Enabled/Disabled</option>
+          <option value="host_bulk_delete">Bulk Delete</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px;">Limit</label>
+        <select id="audit-limit" onchange="loadAuditLog()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;color:var(--tx);font-size:12px;width:100%;">
+          <option value="50">Last 50 events</option>
+          <option value="100" selected>Last 100 events</option>
+          <option value="200">Last 200 events</option>
+          <option value="500">Last 500 events</option>
+        </select>
+      </div>
+      <button class="btn btnA" onclick="loadAuditLog()" style="white-space:nowrap;">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <!-- Summary Stats -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px;">
+    <div class="card" style="padding:16px;">
+      <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Total Events</div>
+      <div style="font-size:28px;font-weight:700;color:var(--acc);" id="audit-total">—</div>
+    </div>
+    <div class="card" style="padding:16px;">
+      <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Failed Logins (24h)</div>
+      <div style="font-size:28px;font-weight:700;color:var(--R);" id="audit-failed-logins">—</div>
+    </div>
+    <div class="card" style="padding:16px;">
+      <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Locked IPs</div>
+      <div style="font-size:28px;font-weight:700;color:var(--Y);" id="audit-locked-ips">—</div>
+    </div>
+  </div>
+
+  <!-- Audit Log Table -->
+  <div class="card" style="margin-top:12px;">
+    <div class="ct">📋 Event Log</div>
+    <div id="audit-log-loading" style="text-align:center;padding:40px;color:var(--tx3);">
+      <div class="ldot" style="width:8px;height:8px;"></div> Loading audit log...
+    </div>
+    <div id="audit-log-table" style="display:none;"></div>
+    <div id="audit-log-empty" style="display:none;text-align:center;padding:40px;color:var(--tx3);">
+      No events found matching your filters.
+    </div>
+  </div>
+</div>
+
 <!-- ── HISTORY ANALYSIS ── -->
 <div class="page" id="page-analysis">
   <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔬 History Analysis</div>
@@ -1320,7 +1388,8 @@ function nav(name) {
     dash:     loadDash,
     users:    loadUsers,
     analysis: loadAnalysis,
-    system:   loadSystemDashboard
+    system:   loadSystemDashboard,
+    audit:    loadAuditLog
   };
   loaders[name]?.();
 }
@@ -3743,6 +3812,139 @@ async function runCleanup() {
   } else {
     toast('Error: ' + (r?.error || 'Unknown'), 'er');
   }
+}
+
+/* ═══════════════════════════════════════════
+   AUDIT LOG (ADMIN)
+═══════════════════════════════════════════ */
+async function loadAuditLog() {
+  const type = $('audit-type-filter')?.value || '';
+  const limit = parseInt($('audit-limit')?.value || '100');
+  
+  // Show loading
+  if ($('audit-log-loading')) $('audit-log-loading').style.display = 'block';
+  if ($('audit-log-table')) $('audit-log-table').style.display = 'none';
+  if ($('audit-log-empty')) $('audit-log-empty').style.display = 'none';
+  
+  try {
+    const url = `/api/admin/audit?limit=${limit}${type ? '&type='+type : ''}`;
+    const data = await G(url);
+    
+    if (!data) {
+      if ($('audit-log-loading')) $('audit-log-loading').style.display = 'none';
+      if ($('audit-log-empty')) $('audit-log-empty').style.display = 'block';
+      return;
+    }
+    
+    // Update stats
+    if ($('audit-total')) $('audit-total').textContent = (data.total || 0).toLocaleString();
+    
+    // Calculate failed logins in last 24h
+    const now = new Date();
+    const dayAgo = new Date(now - 24*60*60*1000);
+    const recentFailedLogins = (data.logs || []).filter(log => 
+      (log.type === 'login_failed' || log.type === 'login_rate_limited') &&
+      new Date(log.timestamp) > dayAgo
+    ).length;
+    if ($('audit-failed-logins')) $('audit-failed-logins').textContent = recentFailedLogins;
+    
+    // Get locked IPs from system stats
+    const sysData = await G('/api/admin/system');
+    if ($('audit-locked-ips') && sysData?.stats) {
+      $('audit-locked-ips').textContent = sysData.stats.locked_ips || 0;
+    }
+    
+    // Render log table
+    const logs = data.logs || [];
+    if (logs.length === 0) {
+      if ($('audit-log-loading')) $('audit-log-loading').style.display = 'none';
+      if ($('audit-log-empty')) $('audit-log-empty').style.display = 'block';
+      return;
+    }
+    
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    html += '<thead><tr style="background:var(--bg3);font-weight:600;text-align:left;">';
+    html += '<th style="padding:8px;width:150px;">Timestamp</th>';
+    html += '<th style="padding:8px;width:180px;">Event Type</th>';
+    html += '<th style="padding:8px;width:120px;">User</th>';
+    html += '<th style="padding:8px;width:120px;">IP Address</th>';
+    html += '<th style="padding:8px;">Details</th>';
+    html += '<th style="padding:8px;width:80px;text-align:center;">Status</th>';
+    html += '</tr></thead><tbody>';
+    
+    logs.forEach(log => {
+      const ts = new Date(log.timestamp);
+      const time = ts.toLocaleString();
+      const eventColor = getEventColor(log.type);
+      const statusIcon = log.success ? '✅' : '❌';
+      const statusColor = log.success ? 'var(--G)' : 'var(--R)';
+      
+      html += `<tr style="border-bottom:1px solid var(--bd);">`;
+      html += `<td style="padding:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2);">${time}</td>`;
+      html += `<td style="padding:8px;"><span style="background:${eventColor};padding:2px 8px;border-radius:4px;font-size:9px;font-weight:600;">${formatEventType(log.type)}</span></td>`;
+      html += `<td style="padding:8px;font-family:'JetBrains Mono',monospace;">${escapeHtml(log.username)}</td>`;
+      html += `<td style="padding:8px;font-family:'JetBrains Mono',monospace;color:var(--tx2);">${escapeHtml(log.ip)}</td>`;
+      html += `<td style="padding:8px;color:var(--tx2);">${escapeHtml(log.details || '—')}</td>`;
+      html += `<td style="padding:8px;text-align:center;font-size:14px;color:${statusColor};">${statusIcon}</td>`;
+      html += `</tr>`;
+    });
+    
+    html += '</tbody></table>';
+    
+    if ($('audit-log-table')) {
+      $('audit-log-table').innerHTML = html;
+      $('audit-log-table').style.display = 'block';
+    }
+    if ($('audit-log-loading')) $('audit-log-loading').style.display = 'none';
+    
+  } catch (err) {
+    console.error('Audit log error:', err);
+    if ($('audit-log-loading')) $('audit-log-loading').style.display = 'none';
+    if ($('audit-log-empty')) {
+      $('audit-log-empty').textContent = 'Error loading audit log';
+      $('audit-log-empty').style.display = 'block';
+    }
+  }
+}
+
+function getEventColor(type) {
+  const colors = {
+    'login_success': 'color-mix(in srgb, var(--G) 20%, transparent)',
+    'login_failed': 'color-mix(in srgb, var(--R) 20%, transparent)',
+    'login_rate_limited': 'color-mix(in srgb, var(--O) 20%, transparent)',
+    'logout': 'color-mix(in srgb, var(--tx3) 20%, transparent)',
+    'user_create': 'color-mix(in srgb, var(--acc) 20%, transparent)',
+    'user_toggle': 'color-mix(in srgb, var(--acc2) 20%, transparent)',
+    'password_reset': 'color-mix(in srgb, var(--Y) 20%, transparent)',
+    'password_change': 'color-mix(in srgb, var(--Y) 20%, transparent)',
+    'host_add': 'color-mix(in srgb, var(--G) 20%, transparent)',
+    'host_toggle': 'color-mix(in srgb, var(--acc) 20%, transparent)',
+    'host_bulk_delete': 'color-mix(in srgb, var(--R) 20%, transparent)'
+  };
+  return colors[type] || 'color-mix(in srgb, var(--tx3) 20%, transparent)';
+}
+
+function formatEventType(type) {
+  const names = {
+    'login_success': '✓ Login',
+    'login_failed': '✗ Login Failed',
+    'login_rate_limited': '⏸ Rate Limited',
+    'logout': '◯ Logout',
+    'user_create': '+ User Created',
+    'user_toggle': '⚡ User Toggle',
+    'password_reset': '🔑 Password Reset',
+    'password_change': '🔑 Password Change',
+    'host_add': '+ Host Added',
+    'host_toggle': '⚡ Host Toggle',
+    'host_bulk_delete': '🗑 Bulk Delete'
+  };
+  return names[type] || type;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 </script>
