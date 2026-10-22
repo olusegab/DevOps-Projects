@@ -921,7 +921,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
           <option value="500">Last 500 events</option>
         </select>
       </div>
-      <button class="btn btnA" onclick="loadAuditLog()" style="white-space:nowrap;">🔄 Refresh</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btnA" onclick="loadAuditLog()" style="white-space:nowrap;">🔄 Refresh</button>
+        <button class="btn" onclick="exportAuditLog()" style="white-space:nowrap;">📥 Export CSV</button>
+        <button class="btn red" onclick="clearAuditLog()" style="white-space:nowrap;">🗑 Clear Log</button>
+      </div>
+    </div>
+    <div style="background:var(--bg3);padding:10px;border-radius:6px;font-size:10px;color:var(--tx2);margin-top:12px;line-height:1.8;">
+      <strong style="color:var(--Y);">Note:</strong> Audit logs are stored in memory only (not database). 
+      Maximum 1,000 most recent events are kept. Logs are lost on service restart.
     </div>
   </div>
 
@@ -3945,6 +3953,74 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+async function clearAuditLog() {
+  if (!confirm('⚠️ Clear all audit log entries?\n\nThis will permanently delete all security event logs from memory.\n\nAre you sure?')) {
+    return;
+  }
+  
+  try {
+    const result = await P('/api/admin/audit/clear', {});
+    if (result?.success) {
+      toast(`✅ Cleared ${result.cleared} audit log entries`, 'ok');
+      loadAuditLog(); // Reload the now-empty log
+    } else {
+      toast('❌ Error: ' + (result?.error || 'Failed to clear log'), 'er');
+    }
+  } catch (err) {
+    console.error('Clear audit log error:', err);
+    toast('❌ Error clearing audit log', 'er');
+  }
+}
+
+function exportAuditLog() {
+  // Get current logs from the displayed table
+  const type = $('audit-type-filter')?.value || '';
+  const limit = parseInt($('audit-limit')?.value || '100');
+  
+  // Fetch full log data
+  const url = `/api/admin/audit?limit=${limit}${type ? '&type='+type : ''}`;
+  
+  G(url).then(data => {
+    if (!data || !data.logs || data.logs.length === 0) {
+      toast('⚠️ No audit log data to export', 'er');
+      return;
+    }
+    
+    // Build CSV
+    const headers = ['Timestamp', 'Event Type', 'Username', 'IP Address', 'Details', 'Success'];
+    const rows = [headers];
+    
+    data.logs.forEach(log => {
+      rows.push([
+        log.timestamp,
+        log.type,
+        log.username,
+        log.ip,
+        (log.details || '').replace(/"/g, '""'), // Escape quotes
+        log.success ? 'Yes' : 'No'
+      ]);
+    });
+    
+    // Convert to CSV string
+    const csv = rows.map(row => 
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    
+    // Download
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    link.href = URL.createObjectURL(blob);
+    link.download = `abayonet_audit_log_${timestamp}.csv`;
+    link.click();
+    
+    toast(`✅ Exported ${data.logs.length} audit entries to CSV`, 'ok');
+  }).catch(err => {
+    console.error('Export audit log error:', err);
+    toast('❌ Error exporting audit log', 'er');
+  });
 }
 
 </script>

@@ -2926,6 +2926,21 @@ class H(BaseHTTPRequestHandler):
                         log.error(f'Admin cleanup error: {e}')
                 threading.Thread(target=_run_cleanup, daemon=True, name='admin-cleanup').start()
                 self.json({'success': True, 'message': 'Cleanup started in background'}); return
+            
+            # ADMIN CLEAR AUDIT LOG
+            if path=='/api/admin/audit/clear':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                try:
+                    with _audit_lock:
+                        count = len(_audit_log)
+                        _audit_log.clear()
+                    audit_log('audit_cleared', sess['username'], self.client_address[0], 
+                             f'Cleared {count} audit log entries', True)
+                    log.info(f'Audit log cleared by {sess["username"]} ({count} entries removed)')
+                    self.json({'success': True, 'cleared': count}); return
+                except Exception as e:
+                    log.error(f'Audit log clear error: {e}')
+                    self.json({'error': str(e)}, 500); return
 
             # MAINTENANCE
             if path=='/api/maintenance':
