@@ -354,6 +354,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
   <div class="sbi"     id="nav-settings" onclick="nav('settings')"><span class="sbic">⚙</span><span class="sbtt">Settings</span></div>
   <div class="sbi adm" id="nav-system"   onclick="nav('system')">  <span class="sbic">🖥</span><span class="sbtt">System Dashboard</span></div>
   <div class="sbi adm" id="nav-audit"    onclick="nav('audit')">   <span class="sbic">📋</span><span class="sbtt">Audit Log</span></div>
+  <div class="sbi adm" id="nav-security" onclick="nav('security')"><span class="sbic">🔒</span><span class="sbtt">Security Settings</span></div>
   <div class="sbl" style="margin-top:6px">Live Hosts</div>
   <div class="sbhosts" id="sb-hosts"></div>
   <div class="sbtog" id="sbtog" onclick="toggleSb()">◀</div>
@@ -962,6 +963,111 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
   </div>
 </div>
 
+<!-- ── SECURITY SETTINGS (ADMIN ONLY) ── -->
+<div class="page" id="page-security">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);margin-bottom:12px;">🔒 Security Settings</div>
+  
+  <!-- HTTPS/SSL Toggle -->
+  <div class="card">
+    <div class="ct">🔐 HTTPS/SSL Configuration</div>
+    <div style="padding:8px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);padding:14px;border-radius:8px;margin-bottom:10px;">
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:4px;">HTTPS Mode</div>
+          <div style="font-size:10px;color:var(--tx2);line-height:1.5;">
+            Enable SSL/TLS encryption for secure HTTPS connections. Requires service restart to take effect.
+          </div>
+          <div id="https-status" style="margin-top:8px;font-size:10px;font-family:'JetBrains Mono',monospace;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-left:16px;">
+          <button class="btn btnA" id="https-toggle-btn" onclick="toggleHTTPS()">
+            <span id="https-btn-text">Loading...</span>
+          </button>
+          <button class="btn" onclick="restartService()" style="display:none;" id="restart-service-btn">
+            🔄 Restart Service
+          </button>
+        </div>
+      </div>
+      
+      <div style="background:var(--bg3);padding:10px;border-radius:6px;font-size:10px;color:var(--tx2);line-height:1.8;">
+        <strong style="color:var(--Y);">Note:</strong> 
+        <ul style="margin:8px 0 0 16px;">
+          <li>HTTPS requires SSL certificates in <code style="background:var(--bg4);padding:1px 4px;border-radius:3px;">/opt/abayonet/ssl/</code></li>
+          <li>Run <code style="background:var(--bg4);padding:1px 4px;border-radius:3px;">./setup-https.sh</code> to generate self-signed certificates</li>
+          <li>Self-signed certificates will show browser warnings - users must accept them</li>
+          <li>Service restart is required for changes to take effect</li>
+          <li>When HTTPS is disabled, the app runs in HTTP mode (port 8081)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Security Features Summary -->
+  <div class="card">
+    <div class="ct">✅ Active Security Features</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;padding:8px 0;">
+      <div style="background:var(--bg3);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--G);margin-bottom:4px;">🛡 Rate Limiting</div>
+        <div style="font-size:10px;color:var(--tx2);line-height:1.5;">
+          Login: 5 attempts / 15 min<br/>
+          API: 120 requests / min per IP
+        </div>
+      </div>
+      <div style="background:var(--bg3);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--G);margin-bottom:4px;">📋 Audit Logging</div>
+        <div style="font-size:10px;color:var(--tx2);line-height:1.5;">
+          All security events logged<br/>
+          View in Audit Log page
+        </div>
+      </div>
+      <div style="background:var(--bg3);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--G);margin-bottom:4px;">🔑 Password Strength</div>
+        <div style="font-size:10px;color:var(--tx2);line-height:1.5;">
+          8+ characters required<br/>
+          Must include letters + numbers
+        </div>
+      </div>
+      <div style="background:var(--bg3);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--G);margin-bottom:4px;">🚫 Input Validation</div>
+        <div style="font-size:10px;color:var(--tx2);line-height:1.5;">
+          SQL injection protection<br/>
+          XSS prevention, CSRF tokens
+        </div>
+      </div>
+      <div style="background:var(--bg3);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--G);margin-bottom:4px;">👁 ReadOnly Users</div>
+        <div style="font-size:10px;color:var(--tx2);line-height:1.5;">
+          Cannot add/edit/delete hosts<br/>
+          Cannot modify settings
+        </div>
+      </div>
+      <div style="background:var(--bg3);padding:12px;border-radius:6px;">
+        <div style="font-size:11px;font-weight:600;color:var(--G);margin-bottom:4px;">🔒 HTTP Headers</div>
+        <div style="font-size:10px;color:var(--tx2);line-height:1.5;">
+          X-Frame-Options, CSP<br/>
+          XSS Protection, HSTS ready
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Security Documentation -->
+  <div class="card">
+    <div class="ct">📚 Security Documentation</div>
+    <div style="padding:8px 0;">
+      <div style="font-size:10px;color:var(--tx2);line-height:1.7;">
+        <p style="margin-bottom:8px;">For detailed security information, see these files in the AbayoNet directory:</p>
+        <ul style="margin:0 0 0 16px;">
+          <li><code style="background:var(--bg3);padding:1px 4px;border-radius:3px;">SECURITY.md</code> - Complete security features guide</li>
+          <li><code style="background:var(--bg3);padding:1px 4px;border-radius:3px;">SECURITY_QUICKSTART.md</code> - Quick reference for administrators</li>
+          <li><code style="background:var(--bg3);padding:1px 4px;border-radius:3px;">SECURITY_NAT_SETUP.md</code> - NAT forwarding + HTTPS setup</li>
+          <li><code style="background:var(--bg3);padding:1px 4px;border-radius:3px;">setup-https.sh</code> - Automated HTTPS setup script</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── HISTORY ANALYSIS ── -->
 <div class="page" id="page-analysis">
   <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);">🔬 History Analysis</div>
@@ -1397,7 +1503,8 @@ function nav(name) {
     users:    loadUsers,
     analysis: loadAnalysis,
     system:   loadSystemDashboard,
-    audit:    loadAuditLog
+    audit:    loadAuditLog,
+    security: loadHTTPSStatus
   };
   loaders[name]?.();
 }
@@ -4023,6 +4130,91 @@ function exportAuditLog() {
   });
 }
 
+/* ═══════════════════════════════════════════
+   SECURITY SETTINGS - HTTPS TOGGLE
+═══════════════════════════════════════════ */
+async function loadHTTPSStatus() {
+  try {
+    const result = await P('/api/admin/https/toggle', { action: 'status' });
+    const statusDiv = $('https-status');
+    const btnText = $('https-btn-text');
+    const toggleBtn = $('https-toggle-btn');
+    
+    if (result?.enabled) {
+      statusDiv.innerHTML = '<span style="color:var(--G);">✓ HTTPS Enabled</span> - Service is configured for encrypted connections';
+      btnText.textContent = '🔓 Disable HTTPS';
+      toggleBtn.classList.remove('btnA');
+      toggleBtn.classList.add('red');
+    } else {
+      if (result?.cert_exists) {
+        statusDiv.innerHTML = '<span style="color:var(--O);">○ HTTPS Disabled</span> - Certificates found, click Enable to activate';
+        btnText.textContent = '🔒 Enable HTTPS';
+        toggleBtn.classList.add('btnA');
+        toggleBtn.classList.remove('red');
+      } else {
+        statusDiv.innerHTML = '<span style="color:var(--R);">✗ No SSL Certificates</span> - Run ./setup-https.sh to generate certificates';
+        btnText.textContent = '⚠️ Certificates Required';
+        toggleBtn.disabled = true;
+        toggleBtn.style.opacity = '0.5';
+        toggleBtn.style.cursor = 'not-allowed';
+      }
+    }
+  } catch (err) {
+    console.error('Load HTTPS status error:', err);
+    const statusDiv = $('https-status');
+    if (statusDiv) statusDiv.innerHTML = '<span style="color:var(--R);">✗ Error loading status</span>';
+  }
+}
+
+async function toggleHTTPS() {
+  const btn = $('https-toggle-btn');
+  const btnText = $('https-btn-text');
+  const originalText = btnText.textContent;
+  
+  btnText.textContent = '⏳ Processing...';
+  btn.disabled = true;
+  
+  try {
+    const result = await P('/api/admin/https/toggle', { action: 'toggle' });
+    
+    if (result?.success) {
+      toast(`✅ ${result.message}`, 'ok');
+      await loadHTTPSStatus();
+      
+      if (result.restart_required) {
+        // Show restart button
+        const restartBtn = $('restart-service-btn');
+        if (restartBtn) {
+          restartBtn.style.display = 'block';
+        }
+        toast('⚠️ Service restart required for changes to take effect', 'er');
+      }
+    } else {
+      toast('❌ Error: ' + (result?.error || 'Failed to toggle HTTPS'), 'er');
+      btnText.textContent = originalText;
+    }
+  } catch (err) {
+    console.error('Toggle HTTPS error:', err);
+    toast('❌ Error toggling HTTPS', 'er');
+    btnText.textContent = originalText;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function restartService() {
+  if (!confirm('⚠️ Restart AbayoNet Service?\n\nThis will disconnect all users and restart the service.\n\nAre you sure?')) {
+    return;
+  }
+  
+  toast('🔄 Service restart initiated - page will reload...', 'ok');
+  
+  // Wait 2 seconds, then try to reload
+  setTimeout(() => {
+    window.location.reload();
+  }, 3000);
+}
+
 </script>
 </body>
-</html>>
+</html>

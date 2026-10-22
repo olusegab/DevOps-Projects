@@ -2943,6 +2943,60 @@ class H(BaseHTTPRequestHandler):
                 except Exception as e:
                     log.error(f'Audit log clear error: {e}')
                     self.json({'error': str(e)}, 500); return
+            
+            # ADMIN TOGGLE HTTPS
+            if path=='/api/admin/https/toggle':
+                if not is_admin: self.json({'error':'Admin only'},403); return
+                try:
+                    ssl_dir = os.path.join(_BASE_DIR, 'ssl')
+                    ssl_disabled = os.path.join(_BASE_DIR, 'ssl.disabled')
+                    
+                    # Check current state
+                    https_enabled = os.path.exists(ssl_dir) and os.path.exists(os.path.join(ssl_dir, 'cert.pem'))
+                    
+                    action = b.get('action', 'toggle')  # 'enable', 'disable', or 'toggle'
+                    
+                    if action == 'status':
+                        self.json({
+                            'enabled': https_enabled,
+                            'cert_exists': os.path.exists(ssl_dir) or os.path.exists(ssl_disabled),
+                            'restart_required': False
+                        }); return
+                    
+                    if action == 'enable' or (action == 'toggle' and not https_enabled):
+                        # Enable HTTPS
+                        if os.path.exists(ssl_disabled):
+                            os.rename(ssl_disabled, ssl_dir)
+                            msg = 'HTTPS enabled - service restart required'
+                            new_state = True
+                        elif os.path.exists(ssl_dir):
+                            msg = 'HTTPS already enabled - service restart may be required'
+                            new_state = True
+                        else:
+                            self.json({'error': 'SSL certificates not found. Run setup-https.sh first.'}, 400); return
+                    else:
+                        # Disable HTTPS
+                        if os.path.exists(ssl_dir):
+                            os.rename(ssl_dir, ssl_disabled)
+                            msg = 'HTTPS disabled - service restart required'
+                            new_state = False
+                        else:
+                            msg = 'HTTPS already disabled'
+                            new_state = False
+                    
+                    audit_log('https_toggled', sess['username'], self.client_address[0], 
+                             f'HTTPS {"enabled" if new_state else "disabled"}', True)
+                    log.info(f'HTTPS {"enabled" if new_state else "disabled"} by {sess["username"]}')
+                    
+                    self.json({
+                        'success': True, 
+                        'enabled': new_state,
+                        'message': msg,
+                        'restart_required': True
+                    }); return
+                except Exception as e:
+                    log.error(f'HTTPS toggle error: {e}')
+                    self.json({'error': str(e)}, 500); return
 
             # MAINTENANCE
             if path=='/api/maintenance':
@@ -3141,6 +3195,28 @@ def main():
             except ValueError: pass
     base_port = read_config_port() if base_port == 8780 else base_port
 
+    # Custom HTTPS server that wraps connections, not the listening socket
+    class SecureHTTPServer(ThreadingHTTPServer):
+        def __init__(self, server_address, RequestHandlerClass, ssl_context=None):
+            super().__init__(server_address, RequestHandlerClass)
+            self.ssl_context = ssl_context
+            
+        def get_request(self):
+            """Override to wrap each connection with SSL"""
+            newsocket, fromaddr = self.socket.accept()
+            if self.ssl_context:
+                try:
+                    newsocket = self.ssl_context.wrap_socket(
+                        newsocket,
+                        server_side=True,
+                        do_handshake_on_connect=True
+                    )
+                except Exception as e:
+                    log.warning(f'SSL handshake failed from {fromaddr}: {e}')
+                    newsocket.close()
+                    raise
+            return newsocket, fromaddr
+    
     PORT = base_port
     server = None
     use_ssl = False
@@ -3166,14 +3242,15 @@ def main():
     
     for p in [base_port, base_port+1, base_port+2, 9100]:
         try:
-            server = ThreadingHTTPServer(('0.0.0.0', p), H)
+            # Use custom SSL server if certificates available
+            if ssl_context:
+                server = SecureHTTPServer(('0.0.0.0', p), H, ssl_context)
+                log.info('✓ SSL/TLS enabled - HTTPS mode active')
+            else:
+                server = ThreadingHTTPServer(('0.0.0.0', p), H)
+            
             server.timeout = 30
             server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            
-            # Wrap socket with SSL if certificates are available
-            if ssl_context:
-                server.socket = ssl_context.wrap_socket(server.socket, server_side=True)
-                log.info('✓ SSL/TLS enabled - HTTPS mode active')
             
             PORT = p
             PROTOCOL = 'https' if use_ssl else 'http'
