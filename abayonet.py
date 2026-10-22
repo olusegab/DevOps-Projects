@@ -1300,10 +1300,10 @@ def snmp_bandwidth_monitor_loop():
         try:
             # Get hosts with SNMP enabled and monitored interfaces
             hosts = db_all("""
-                SELECT DISTINCT h.id, h.ip, h.snmp_community
+                SELECT DISTINCT h.id, h.ip, h.snmp_community, h.snmp_port
                 FROM hosts h
                 JOIN interfaces i ON h.id = i.host_id
-                WHERE h.enabled=1 AND i.monitored=1 AND h.snmp_community IS NOT NULL
+                WHERE h.enabled=1 AND h.snmp_enabled=1 AND i.monitored=1
             """)
             
             for host in hosts:
