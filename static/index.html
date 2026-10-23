@@ -343,6 +343,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
 <div id="sb">
   <div class="sbl">Navigation</div>
   <div class="sbi act" id="nav-dash"     onclick="nav('dash')">    <span class="sbic">🏠</span><span class="sbtt">Dashboard</span></div>
+  <div class="sbi"     id="nav-map"      onclick="nav('map')">     <span class="sbic">🗺</span><span class="sbtt">Geographic Map</span></div>
   <div class="sbi"     id="nav-hosts"    onclick="nav('hosts')">   <span class="sbic">🖥</span><span class="sbtt">All Hosts</span><span class="sbct" id="sb-hc">0</span></div>
   <div class="sbi"     id="nav-alerts"   onclick="nav('alerts')">  <span class="sbic">🔔</span><span class="sbtt">Alerts</span><span class="sbct" id="sb-ac">0</span></div>
   <div class="sbi"     id="nav-rules"    onclick="nav('rules')">   <span class="sbic">📏</span><span class="sbtt">Alert Rules</span></div>
@@ -385,6 +386,50 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
       <input id="dsearch" placeholder="Filter hosts..." oninput="filterDash()" style="background:var(--bg3);border:1px solid var(--bd);border-radius:6px;padding:4px 9px;color:var(--tx);font-size:11px;outline:none;width:160px;"/>
     </div>
     <div class="hgrid" id="dash-hg"></div>
+  </div>
+</div>
+
+<!-- ── GEOGRAPHIC MAP ── -->
+<div class="page" id="page-map">
+  <div style="font-family:'Orbitron',monospace;font-size:13px;color:var(--acc);margin-bottom:12px;">🗺 HOST LOCATIONS</div>
+  
+  <div style="display:grid;grid-template-columns:1fr 400px;gap:16px;height:calc(100vh - 140px);">
+    <!-- Map Canvas -->
+    <div class="card" style="position:relative;padding:0;overflow:hidden;">
+      <canvas id="map-canvas" style="width:100%;height:100%;"></canvas>
+      <div style="position:absolute;bottom:12px;left:12px;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;">
+        SCHEMATIC · POSITIONS APPROXIMATE
+      </div>
+      <div style="position:absolute;top:12px;right:12px;display:flex;gap:12px;font-size:10px;">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--G);"></div>
+          <span style="color:var(--tx2);">All healthy</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--O);"></div>
+          <span style="color:var(--tx2);">Has degraded</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--R);"></div>
+          <span style="color:var(--tx2);">Has offline</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Right Sidebar -->
+    <div style="display:flex;flex-direction:column;gap:12px;overflow-y:auto;">
+      <!-- Selected City Details -->
+      <div class="card" id="map-city-detail" style="display:none;">
+        <div class="ct" id="map-city-name">City</div>
+        <div id="map-city-hosts" style="max-height:400px;overflow-y:auto;"></div>
+      </div>
+      
+      <!-- Sites by Severity -->
+      <div class="card">
+        <div class="ct">SITES BY SEVERITY</div>
+        <div id="map-sites-list" style="display:flex;flex-direction:column;gap:4px;max-height:500px;overflow-y:auto;"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1504,7 +1549,8 @@ function nav(name) {
     analysis: loadAnalysis,
     system:   loadSystemDashboard,
     audit:    loadAuditLog,
-    security: loadHTTPSStatus
+    security: loadHTTPSStatus,
+    map:      loadGeographicMap
   };
   loaders[name]?.();
 }
@@ -4213,6 +4259,277 @@ async function restartService() {
   setTimeout(() => {
     window.location.reload();
   }, 3000);
+}
+
+/* ═══════════════════════════════════════════
+   GEOGRAPHIC MAP
+═══════════════════════════════════════════ */
+
+// Nigerian city coordinates (approximate)
+const CITY_COORDS = {
+  'Lagos': { lat: 6.5244, lon: 3.3792, x: 0.25, y: 0.75 },
+  'Abeokuta': { lat: 7.1475, lon: 3.3619, x: 0.23, y: 0.62 },
+  'Ibadan': { lat: 7.3775, lon: 3.9470, x: 0.35, y: 0.58 },
+  'Akure': { lat: 7.2571, lon: 5.2058, x: 0.50, y: 0.60 },
+  'Benin City': { lat: 6.3350, lon: 5.6037, x: 0.52, y: 0.78 },
+  'Asaba': { lat: 6.1987, lon: 6.7337, x: 0.62, y: 0.82 },
+  'Awka': { lat: 6.2104, lon: 7.0720, x: 0.68, y: 0.81 },
+  'Aba': { lat: 5.1066, lon: 7.3667, x: 0.72, y: 0.92 },
+  'Calabar': { lat: 4.9517, lon: 8.3417, x: 0.80, y: 0.95 },
+  'Port Harcourt': { lat: 4.8156, lon: 7.0498, x: 0.68, y: 0.96 },
+  'Abuja': { lat: 9.0765, lon: 7.3986, x: 0.70, y: 0.30 },
+  'Kaduna': { lat: 10.5105, lon: 7.4165, x: 0.72, y: 0.18 },
+  'Kano': { lat: 12.0022, lon: 8.5920, x: 0.78, y: 0.05 },
+  'Jos': { lat: 9.8965, lon: 8.8583, x: 0.82, y: 0.32 },
+  'Minna': { lat: 9.6139, lon: 6.5569, x: 0.60, y: 0.35 },
+  'Yenagoa': { lat: 4.9267, lon: 6.2676, x: 0.60, y: 0.95 }
+};
+
+let mapData = { cities: {}, allHosts: [] };
+let selectedCity = null;
+
+async function loadGeographicMap() {
+  const hosts = await G('/api/hosts');
+  if (!hosts) return;
+  
+  mapData.allHosts = hosts;
+  mapData.cities = {};
+  
+  // Group hosts by city (parse from location field or infer from name)
+  hosts.forEach(h => {
+    let city = parseCity(h.location || h.name);
+    if (!city) city = 'Unknown';
+    
+    if (!mapData.cities[city]) {
+      mapData.cities[city] = {
+        name: city,
+        hosts: [],
+        online: 0,
+        offline: 0,
+        degraded: 0
+      };
+    }
+    
+    mapData.cities[city].hosts.push(h);
+    
+    // Count status
+    if (h.status === 'offline') mapData.cities[city].offline++;
+    else if (h.latency_ms > 200 || h.packet_loss > 10) mapData.cities[city].degraded++;
+    else mapData.cities[city].online++;
+  });
+  
+  renderMap();
+  renderSitesList();
+}
+
+function parseCity(text) {
+  if (!text) return null;
+  
+  text = text.toUpperCase();
+  
+  // Try to match known cities
+  for (const city in CITY_COORDS) {
+    if (text.includes(city.toUpperCase())) {
+      return city;
+    }
+  }
+  
+  // Check for common city name patterns in host names
+  if (text.includes('LAGOS') || text.includes('LEKKI') || text.includes('IKEJA') || 
+      text.includes('YABA') || text.includes('IKOYI') || text.includes('VI') ||
+      text.includes('MARYLAND') || text.includes('AJAH') || text.includes('FESTAC') ||
+      text.includes('SURULERE') || text.includes('AGEGE')) return 'Lagos';
+  
+  if (text.includes('ABEOKUTA')) return 'Abeokuta';
+  if (text.includes('IBADAN') || text.includes('BODIJA') || text.includes('RING ROAD')) return 'Ibadan';
+  if (text.includes('AKURE')) return 'Akure';
+  if (text.includes('BENIN')) return 'Benin City';
+  if (text.includes('ASABA')) return 'Asaba';
+  if (text.includes('AWKA')) return 'Awka';
+  if (text.includes('ABA ') || text.includes(' ABA')) return 'Aba';
+  if (text.includes('CALABAR')) return 'Calabar';
+  if (text.includes('PORT HARCOURT') || text.includes('PH-') || text.includes('PETER ODILI')) return 'Port Harcourt';
+  if (text.includes('ABUJA') || text.includes('WUSE') || text.includes('GWARIMPA') || text.includes('KUBWA')) return 'Abuja';
+  if (text.includes('KADUNA')) return 'Kaduna';
+  if (text.includes('KANO')) return 'Kano';
+  if (text.includes('JOS')) return 'Jos';
+  if (text.includes('MINNA')) return 'Minna';
+  if (text.includes('YENAGOA')) return 'Yenagoa';
+  if (text.includes('WARRI')) return 'Yenagoa';
+  if (text.includes('OWERRI')) return 'Aba';
+  if (text.includes('ONITSHA')) return 'Awka';
+  
+  return null;
+}
+
+function renderMap() {
+  const canvas = $('map-canvas');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const rect = canvas.parentElement.getBoundingClientRect();
+  
+  // Set canvas resolution
+  canvas.width = rect.width * 2;
+  canvas.height = rect.height * 2;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(2, 2);
+  
+  const w = rect.width;
+  const h = rect.height;
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, w, h);
+  
+  // Draw cities
+  Object.values(mapData.cities).forEach(city => {
+    const coords = CITY_COORDS[city.name];
+    if (!coords) return;
+    
+    const x = coords.x * w;
+    const y = coords.y * h;
+    const total = city.hosts.length;
+    
+    // Determine city status color
+    let color = '#00e676'; // green
+    if (city.offline > 0) color = '#ff1744'; // red
+    else if (city.degraded > 0) color = '#ffc107'; // orange
+    
+    // Calculate bubble size based on host count
+    const minSize = 15;
+    const maxSize = 60;
+    const size = Math.min(maxSize, minSize + (total * 3));
+    
+    // Draw bubble
+    ctx.beginPath();
+    ctx.arc(x, y, size, 0, Math.PI * 2);
+    ctx.fillStyle = color + '40'; // with alpha
+    ctx.fill();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Draw label
+    ctx.fillStyle = '#deeeff';
+    ctx.font = '11px Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText(city.name, x, y - size - 8);
+    
+    // Draw host count
+    ctx.font = 'bold 13px Inter';
+    ctx.fillStyle = color;
+    ctx.fillText(total, x, y + 5);
+    
+    // Store click region for interactivity
+    city._clickRegion = { x, y, radius: size };
+  });
+  
+  // Add click handler
+  canvas.onclick = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Check if clicked on a city
+    for (const city of Object.values(mapData.cities)) {
+      if (!city._clickRegion) continue;
+      
+      const dx = x - city._clickRegion.x;
+      const dy = y - city._clickRegion.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      
+      if (dist <= city._clickRegion.radius) {
+        selectCity(city.name);
+        return;
+      }
+    }
+    
+    // Clicked outside - deselect
+    selectedCity = null;
+    $('map-city-detail').style.display = 'none';
+  };
+}
+
+function selectCity(cityName) {
+  selectedCity = cityName;
+  const city = mapData.cities[cityName];
+  if (!city) return;
+  
+  const detail = $('map-city-detail');
+  const nameEl = $('map-city-name');
+  const hostsEl = $('map-city-hosts');
+  
+  detail.style.display = 'block';
+  
+  // Determine status
+  let status = 'OK';
+  let statusColor = 'var(--G)';
+  if (city.offline > 0) {
+    status = 'OFFLINE';
+    statusColor = 'var(--R)';
+  } else if (city.degraded > 0) {
+    status = 'DEGRADED';
+    statusColor = 'var(--O)';
+  }
+  
+  nameEl.innerHTML = `${cityName} <span style="color:${statusColor};margin-left:8px;">${status}</span>`;
+  nameEl.innerHTML += `<div style="font-size:10px;color:var(--tx2);font-weight:400;margin-top:4px;">${city.hosts.length} hosts, ${city.offline + city.degraded > 0 ? (city.offline + city.degraded) + ' need attention' : 'all healthy'}</div>`;
+  
+  // Render host list
+  hostsEl.innerHTML = city.hosts.map(h => {
+    let statusText = 'OK';
+    let statusColor = 'var(--G)';
+    let latency = `${h.latency_ms?.toFixed(1) || '-'} ms`;
+    
+    if (h.status === 'offline') {
+      statusText = 'OFFLINE';
+      statusColor = 'var(--R)';
+      latency = h.packet_loss >= 100 ? '100% loss' : latency;
+    } else if (h.latency_ms > 200 || h.packet_loss > 10) {
+      statusText = 'DEGRADED';
+      statusColor = 'var(--O)';
+    }
+    
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg3);border-radius:6px;cursor:pointer;" onclick="nav('detail'); loadDetail(${h.id}, true);">
+        <div style="width:8px;height:8px;border-radius:50%;background:${statusColor};flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(h.name)}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:${statusColor};font-weight:600;">${statusText}</div>
+          <div style="font-size:9px;color:var(--tx2);">${latency}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderSitesList() {
+  const list = $('map-sites-list');
+  if (!list) return;
+  
+  // Sort cities by severity (offline > degraded > healthy) then by name
+  const cities = Object.values(mapData.cities).sort((a, b) => {
+    if (a.offline !== b.offline) return b.offline - a.offline;
+    if (a.degraded !== b.degraded) return b.degraded - a.degraded;
+    return a.name.localeCompare(b.name);
+  });
+  
+  list.innerHTML = cities.map(city => {
+    let color = '#00e676';
+    if (city.offline > 0) color = '#ff1744';
+    else if (city.degraded > 0) color = '#ffc107';
+    
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--bg3);border-radius:6px;cursor:pointer;" onclick="selectCity('${esc(city.name)}')">
+        <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+        <div style="flex:1;font-size:11px;color:var(--tx);">${esc(city.name)}</div>
+        <div style="font-size:10px;color:var(--tx2);">${city.hosts.length} host${city.hosts.length !== 1 ? 's' : ''}</div>
+      </div>
+    `;
+  }).join('');
 }
 
 </script>
