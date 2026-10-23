@@ -4533,5 +4533,467 @@ function renderSitesList() {
 }
 
 </script>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ABAYONET HEATMAP ADD-ON (additive, read-only)
+     
+     - Adds a "Cards | Heatmap" toggle to the topbar button area
+     - Heatmap view: colored tiles per host (latency/loss/uptime)
+     - Includes distribution chart and slowest hosts list
+     - "Cards" restores the existing Host Status Board exactly as it was
+     - Never removes or rewrites existing elements - only hides/shows
+═══════════════════════════════════════════════════════════════ -->
+
+<style id="abx-hm-style">
+  /* Segmented toggle button */
+  .abx-hm-seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;background:var(--bg2);vertical-align:middle}
+  .abx-hm-seg button{min-height:32px;padding:0 14px;border:0;background:transparent;color:var(--tx2);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .2s}
+  .abx-hm-seg button[aria-pressed="true"]{background:var(--acc);color:#000;font-weight:600}
+  .abx-hm-seg button:hover:not([aria-pressed="true"]){background:var(--bg3);color:var(--tx)}
+  .abx-hm-seg button:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+  
+  /* Main container */
+  #abx-hm-root{box-sizing:border-box;margin:0;color:var(--tx);font-family:inherit;padding:20px 0}
+  #abx-hm-root[hidden]{display:none}
+  
+  /* Layout */
+  .abx-hm-wrap{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start}
+  .abx-hm-main{flex:999 1 560px;min-width:0;box-sizing:border-box}
+  .abx-hm-side{flex:1 1 280px;max-width:360px;display:flex;flex-direction:column;gap:16px}
+  
+  /* Cards */
+  .abx-hm-card{box-sizing:border-box;padding:16px;border:1px solid var(--bd);border-radius:12px;background:var(--card)}
+  
+  /* Top bar with metric buttons */
+  .abx-hm-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:14px}
+  .abx-hm-title{margin:0;font:600 11px/1 'Orbitron',monospace;letter-spacing:.18em;color:var(--tx2);text-transform:uppercase}
+  .abx-hm-metrics{display:flex;gap:6px}
+  .abx-hm-metrics button{min-height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .2s}
+  .abx-hm-metrics button[aria-pressed="true"]{background:var(--acc);color:#000;border-color:var(--acc)}
+  .abx-hm-metrics button:hover:not([aria-pressed="true"]){background:var(--bg3);color:var(--tx)}
+  
+  /* Grid of host tiles */
+  .abx-hm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+  .abx-hm-tile{box-sizing:border-box;min-height:106px;padding:11px 12px;border-radius:8px;border:2px solid transparent;display:flex;flex-direction:column;justify-content:space-between;gap:6px;text-align:left;font-family:inherit;cursor:pointer;transition:all .2s}
+  .abx-hm-tile:hover{transform:translateY(-2px);filter:brightness(1.15);box-shadow:0 4px 16px rgba(0,0,0,0.4)}
+  .abx-hm-tile:focus-visible{outline:2px solid #fff;outline-offset:2px}
+  .abx-hm-name{font-size:11px;font-weight:600;letter-spacing:.04em;line-height:1.25;word-wrap:break-word}
+  .abx-hm-big{font:700 20px/1 'JetBrains Mono',monospace}
+  .abx-hm-sub{font:400 10px/1.2 'JetBrains Mono',monospace;opacity:.9}
+  
+  /* Color classes */
+  .abx-c0{background:#12324f;color:#dbe7ff}
+  .abx-c1{background:#1b4f7a;color:#fff}
+  .abx-c2{background:#3b9ac4;color:#06101f}
+  .abx-c3{background:#f0b429;color:#06101f}
+  .abx-c4{background:#ef4444;color:#fff}
+  .abx-off{background:rgba(239,68,68,0.08);color:#fca5a5;border:2px dashed #ef4444}
+  
+  /* Legend */
+  .abx-hm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:14px;font-size:11px;color:var(--tx2)}
+  .abx-hm-legend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:6px;vertical-align:-2px;border:1px solid var(--bd);box-sizing:border-box}
+  
+  /* Distribution chart */
+  .abx-hm-bars{display:flex;align-items:flex-end;gap:10px;height:118px;margin-top:14px}
+  .abx-hm-barcol{flex:1 1 0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
+  .abx-hm-barcol b{font:400 11px/1 'JetBrains Mono',monospace;color:var(--tx)}
+  .abx-hm-barcol i{display:block;width:100%;border-radius:4px 4px 0 0}
+  .abx-hm-barlabs{display:flex;gap:10px;margin:6px 0 10px}
+  .abx-hm-barlabs span{flex:1 1 0;text-align:center;font:400 10px/1 'JetBrains Mono',monospace;color:var(--tx3)}
+  .abx-hm-note{font-size:12px;color:var(--tx2);margin-top:6px}
+  
+  /* Slowest hosts */
+  .abx-hm-slowrow{margin-top:12px}
+  .abx-hm-slowtop{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+  .abx-hm-slowtop span:last-child{font-family:'JetBrains Mono',monospace}
+  .abx-hm-track{height:6px;border-radius:3px;background:var(--bg3)}
+  .abx-hm-track i{display:block;height:6px;border-radius:3px}
+  
+  /* Empty state */
+  .abx-hm-empty{padding:32px;text-align:center;color:var(--tx3);font-size:13px}
+</style>
+
+<script id="abx-hm-script">
+(function () {
+  'use strict';
+  
+  if (window.__abxHeatmap) return;  // Never install twice
+  window.__abxHeatmap = true;
+  
+  /* ══════════════════════════════════════════════════════════════
+     CONFIG - Adapt these selectors to match your app's structure
+  ══════════════════════════════════════════════════════════════ */
+  var CONFIG = {
+    boardSelector: '#hosts-grid',              // The container with all host cards
+    cardSelector: '.hcard',                     // Individual host card
+    nameSelector: '.hcn',                       // Host name element
+    statSelector: '.hcm',                       // Stat tiles (latency, loss, uptime, TTL)
+    toggleMountSelector: '.view-toggle',        // Where to mount the toggle button
+    refreshMs: 5000,                            // Redraw interval
+    rememberView: true,                         // Remember view choice in localStorage
+    
+    // Optional: provide a data source function instead of scraping
+    getHosts: function () { return null; }      // Return null to scrape DOM
+  };
+  
+  /* ══════════════════════════════════════════════════════════════
+     HELPERS
+  ══════════════════════════════════════════════════════════════ */
+  var KEY = 'abx.view';
+  var board = null, root = null, grid = null, legend = null, count = null, dist = null, slow = null;
+  var metric = 'latency', timer = null, view = 'cards';
+  
+  function q(sel, ctx) { try { return (ctx || document).querySelector(sel); } catch (e) { return null; } }
+  function qa(sel, ctx) { try { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); } catch (e) { return []; } }
+  function num(t) { var m = String(t == null ? '' : t).replace(/,/g, '').match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; }
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) {} return null; }
+  
+  /* ══════════════════════════════════════════════════════════════
+     DATA SCRAPING (read-only, never modifies the DOM)
+  ══════════════════════════════════════════════════════════════ */
+  function scrapeHosts() {
+    return qa(CONFIG.cardSelector, board).map(function (card) {
+      var nameEl = q(CONFIG.nameSelector, card);
+      var h = {
+        name: nameEl ? nameEl.textContent.trim() : '?',
+        latency: null,
+        loss: 0,
+        uptime: null,
+        ttl: null,
+        el: card,
+        paused: card.classList.contains('paused'),
+        offline: card.classList.contains('offline')
+      };
+      
+      // Extract stats from .hcm elements
+      qa(CONFIG.statSelector, card).forEach(function (statEl) {
+        var labelEl = q('.hcml', statEl);
+        var valueEl = q('.hcmv', statEl);
+        if (!labelEl || !valueEl) return;
+        
+        var label = labelEl.textContent.toUpperCase();
+        var value = num(valueEl.textContent);
+        
+        if (label === 'MS') h.latency = value;
+        else if (label === 'LOSS') h.loss = value == null ? 0 : value;
+        else if (label.includes('UP') || label.includes('24H')) h.uptime = value;
+        else if (label === 'TTL') h.ttl = value;
+      });
+      
+      return h;
+    });
+  }
+  
+  function hosts() {
+    var d = null;
+    try { d = CONFIG.getHosts(); } catch (e) { d = null; }
+    return Array.isArray(d) ? d : scrapeHosts();
+  }
+  
+  /* ══════════════════════════════════════════════════════════════
+     COLOR BUCKETS
+  ══════════════════════════════════════════════════════════════ */
+  function bucket(h) {
+    if (metric === 'latency') {
+      var v = h.latency;
+      return v <= 15 ? 0 : v <= 25 ? 1 : v <= 45 ? 2 : v <= 100 ? 3 : 4;
+    }
+    if (metric === 'loss') {
+      var l = h.loss;
+      return l === 0 ? 0 : l <= 1 ? 1 : l <= 5 ? 2 : l <= 10 ? 3 : 4;
+    }
+    // uptime
+    var u = h.uptime == null ? 100 : h.uptime;
+    return u >= 99.9 ? 0 : u >= 99 ? 1 : u >= 95 ? 2 : u >= 90 ? 3 : 4;
+  }
+  
+  var LEGENDS = {
+    latency: [['0', '≤ 15 ms'], ['1', '≤ 25'], ['2', '≤ 45'], ['3', '≤ 100'], ['4', '> 100']],
+    loss:    [['0', '0%'], ['1', '≤ 1%'], ['2', '≤ 5%'], ['3', '≤ 10%'], ['4', '> 10%']],
+    uptime:  [['0', '≥ 99.9%'], ['1', '≥ 99%'], ['2', '≥ 95%'], ['3', '≥ 90%'], ['4', '< 90%']]
+  };
+  
+  var SWATCH = ['#12324f', '#1b4f7a', '#3b9ac4', '#f0b429', '#ef4444'];
+  
+  /* ══════════════════════════════════════════════════════════════
+     RENDER (only touches OUR container, never the original board)
+  ══════════════════════════════════════════════════════════════ */
+  function render() {
+    if (!root || root.hidden) return;
+    
+    var list = hosts().filter(function (h) {
+      // Honor the app's own filter: skip cards the app has hidden
+      return !(h.el && window.getComputedStyle(h.el).display === 'none');
+    });
+    
+    grid.textContent = '';
+    
+    if (!list.length) {
+      grid.appendChild(el('div', 'abx-hm-empty', 'No hosts to show'));
+      return;
+    }
+    
+    var off = 0;
+    list.forEach(function (h) {
+      var down = h.paused || h.offline || h.latency == null;
+      var t = el('button', 'abx-hm-tile ' + (down ? 'abx-off' : 'abx-c' + bucket(h)));
+      t.type = 'button';
+      t.title = h.name;
+      
+      var big, sub;
+      if (down) {
+        off++;
+        big = h.paused ? 'PAUSED' : 'OFFLINE';
+        sub = (h.loss||0) + '% loss';
+      } else if (metric === 'latency') {
+        big = h.latency.toFixed(1) + ' ms';
+        sub = 'loss ' + (h.loss||0).toFixed(1) + '%';
+      } else if (metric === 'loss') {
+        big = (h.loss||0).toFixed(1) + '%';
+        sub = h.latency.toFixed(1) + ' ms';
+      } else {
+        big = (h.uptime == null ? '–' : h.uptime.toFixed(1) + '%');
+        sub = h.latency.toFixed(1) + ' ms';
+      }
+      
+      t.appendChild(el('span', 'abx-hm-name', h.name));
+      t.appendChild(el('span', 'abx-hm-big', big));
+      t.appendChild(el('span', 'abx-hm-sub', sub));
+      t.setAttribute('aria-label', h.name + ', ' + big + ', ' + sub);
+      
+      // Clicking a tile triggers the ORIGINAL card's click handler
+      if (h.el) t.addEventListener('click', function () { h.el.click(); });
+      
+      grid.appendChild(t);
+    });
+    
+    count.textContent = list.length + ' hosts · ' + off + ' offline';
+    
+    // Update legend
+    legend.textContent = '';
+    legend.appendChild(el('span', '', metric.toUpperCase()));
+    LEGENDS[metric].forEach(function (g) {
+      var s = el('span');
+      var i = el('i');
+      i.style.background = SWATCH[+g[0]];
+      s.appendChild(i);
+      s.appendChild(document.createTextNode(g[1]));
+      legend.appendChild(s);
+    });
+    var o = el('span');
+    var oi = el('i');
+    oi.style.border = '2px dashed #ef4444';
+    oi.style.background = 'rgba(239,68,68,0.08)';
+    o.appendChild(oi);
+    o.appendChild(document.createTextNode('Offline / paused'));
+    legend.appendChild(o);
+    
+    renderSide(list);
+  }
+  
+  /* ══════════════════════════════════════════════════════════════
+     SIDE PANELS: Distribution chart + slowest hosts
+  ══════════════════════════════════════════════════════════════ */
+  var BARCOL = ['#2a6aa0', '#2f86b8', '#3b9ac4', '#f0b429', '#ef4444'];
+  
+  function renderSide(list) {
+    var on = list.filter(function (h) { return !(h.paused || h.offline || h.latency == null); });
+    
+    var edges = [['\u226415', 0, 15], ['\u226425', 15, 25], ['\u226445', 25, 45], ['\u2264100', 45, 100], ['>100', 100, 1e9]];
+    var counts = edges.map(function (e) {
+      return on.filter(function (h) { return h.latency > e[1] && h.latency <= e[2]; }).length;
+    });
+    var mx = Math.max.apply(null, counts.concat([1]));
+    
+    // Distribution chart
+    dist.textContent = '';
+    dist.appendChild(el('h2', 'abx-hm-title', 'LATENCY DISTRIBUTION'));
+    
+    var bars = el('div', 'abx-hm-bars'), labs = el('div', 'abx-hm-barlabs');
+    edges.forEach(function (e, i) {
+      var col = el('div', 'abx-hm-barcol');
+      col.appendChild(el('b', '', String(counts[i])));
+      var bar = el('i');
+      bar.style.height = Math.max(4, Math.round(counts[i] / mx * 84)) + 'px';
+      bar.style.background = BARCOL[i];
+      col.appendChild(bar);
+      bars.appendChild(col);
+      labs.appendChild(el('span', '', e[0]));
+    });
+    dist.appendChild(bars);
+    dist.appendChild(labs);
+    dist.appendChild(el('div', 'abx-hm-note', on.length + ' online hosts shown, in milliseconds.'));
+    
+    // Slowest hosts
+    slow.textContent = '';
+    slow.appendChild(el('h2', 'abx-hm-title', 'SLOWEST HOSTS'));
+    
+    var top = on.slice().sort(function (a, b) { return b.latency - a.latency; }).slice(0, 5);
+    var top0 = top.length ? top[0].latency : 1;
+    
+    top.forEach(function (h) {
+      var c = h.latency > 100 ? '#ef4444' : h.latency > 45 ? '#f0b429' : '#3b9ac4';
+      var row = el('div', 'abx-hm-slowrow'), t = el('div', 'abx-hm-slowtop');
+      t.appendChild(el('span', '', h.name));
+      var ms = el('span', '', h.latency.toFixed(1) + ' ms');
+      ms.style.color = c;
+      t.appendChild(ms);
+      var tr = el('div', 'abx-hm-track'), f = el('i');
+      f.style.width = Math.round(h.latency / top0 * 100) + '%';
+      f.style.background = c;
+      tr.appendChild(f);
+      row.appendChild(t);
+      row.appendChild(tr);
+      slow.appendChild(row);
+    });
+  }
+  
+  /* ══════════════════════════════════════════════════════════════
+     VIEW SWITCHING (hide/show only, no DOM modification)
+  ══════════════════════════════════════════════════════════════ */
+  var seg, bCards, bHeat;
+  
+  function setView(v) {
+    view = v;
+    var heat = v === 'heatmap';
+    
+    if (board) board.style.display = heat ? 'none' : (board.__abxDisplay || '');
+    root.hidden = !heat;
+    
+    bCards.setAttribute('aria-pressed', String(!heat));
+    bHeat.setAttribute('aria-pressed', String(heat));
+    
+    clearInterval(timer);
+    if (heat) {
+      render();
+      timer = setInterval(render, CONFIG.refreshMs);
+    }
+    
+    if (CONFIG.rememberView) store(KEY, v);
+  }
+  
+  /* ══════════════════════════════════════════════════════════════
+     BUILD UI
+  ══════════════════════════════════════════════════════════════ */
+  function build() {
+    board = q(CONFIG.boardSelector);
+    if (!board) {
+      console.warn('[abx-heatmap] board not found:', CONFIG.boardSelector);
+      return false;
+    }
+    
+    board.__abxDisplay = board.style.display;  // Remember original display
+    
+    // Create heatmap root container
+    root = el('section');
+    root.id = 'abx-hm-root';
+    root.hidden = true;
+    root.setAttribute('aria-label', 'Host heatmap');
+    
+    // Top bar with title and metric buttons
+    var bar = el('div', 'abx-hm-bar');
+    var left = el('div');
+    left.appendChild(el('h2', 'abx-hm-title', 'HOST HEATMAP'));
+    count = el('span', 'abx-hm-sub');
+    left.appendChild(count);
+    
+    var m = el('div', 'abx-hm-metrics');
+    m.setAttribute('role', 'group');
+    m.setAttribute('aria-label', 'Color tiles by');
+    
+    [['latency', 'Latency'], ['loss', 'Packet loss'], ['uptime', 'Uptime 24h']].forEach(function (p) {
+      var b = el('button', '', p[1]);
+      b.type = 'button';
+      b.setAttribute('aria-pressed', String(p[0] === metric));
+      b.addEventListener('click', function () {
+        metric = p[0];
+        qa('button', m).forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        render();
+      });
+      m.appendChild(b);
+    });
+    
+    bar.appendChild(left);
+    bar.appendChild(m);
+    
+    // Grid and legend
+    grid = el('div', 'abx-hm-grid');
+    legend = el('div', 'abx-hm-legend');
+    
+    var wrap = el('div', 'abx-hm-wrap');
+    var mainCard = el('div', 'abx-hm-main abx-hm-card');
+    mainCard.appendChild(bar);
+    mainCard.appendChild(grid);
+    mainCard.appendChild(legend);
+    
+    // Side panels
+    var side = el('aside', 'abx-hm-side');
+    dist = el('div', 'abx-hm-card');
+    slow = el('div', 'abx-hm-card');
+    side.appendChild(dist);
+    side.appendChild(slow);
+    
+    wrap.appendChild(mainCard);
+    wrap.appendChild(side);
+    root.appendChild(wrap);
+    
+    // Insert AFTER the board (nothing moved or removed)
+    board.parentNode.insertBefore(root, board.nextSibling);
+    
+    // Create toggle button
+    seg = el('div', 'abx-hm-seg');
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Dashboard view');
+    
+    bCards = el('button', '', 'Cards');
+    bHeat = el('button', '', 'Heatmap');
+    bCards.type = bHeat.type = 'button';
+    
+    bCards.addEventListener('click', function () { setView('cards'); });
+    bHeat.addEventListener('click', function () { setView('heatmap'); });
+    
+    seg.appendChild(bCards);
+    seg.appendChild(bHeat);
+    
+    // Mount the toggle
+    var mount = q(CONFIG.toggleMountSelector);
+    if (mount) {
+      mount.insertBefore(seg, mount.firstChild);
+    } else {
+      // Fallback: add to page header if available
+      var pageHeader = q('#page-hosts .ct');
+      if (pageHeader) {
+        pageHeader.appendChild(document.createTextNode(' '));
+        pageHeader.appendChild(seg);
+      }
+    }
+    
+    // Restore last view or default to cards
+    setView(CONFIG.rememberView && store(KEY) === 'heatmap' ? 'heatmap' : 'cards');
+    
+    return true;
+  }
+  
+  /* ══════════════════════════════════════════════════════════════
+     BOOT (wait for app to render the board)
+  ══════════════════════════════════════════════════════════════ */
+  function boot() {
+    if (build()) return;
+    
+    var tries = 0, w = setInterval(function () {
+      if (++tries > 40) { clearInterval(w); return; }  // Give up after ~20s
+      if (q(CONFIG.boardSelector) && build()) clearInterval(w);
+    }, 500);
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();
+</script>
+
 </body>
 </html>
