@@ -326,6 +326,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
     <div class="ts"><span class="ldot"></span>&nbsp;<span class="tsl">LIVE</span></div>
   </div>
   <div class="tright">
+    <!-- View Toggle Buttons -->
+    <div style="display:flex;gap:0;border:1px solid var(--bd);border-radius:7px;overflow:hidden;">
+      <div id="view-btn-cards" class="tbtn" style="border:none;border-radius:0;padding:6px 12px;background:var(--acc);color:#000;" onclick="switchView('cards')">
+        <span style="font-size:12px;">📇</span> Cards
+      </div>
+      <div id="view-btn-heatmap" class="tbtn" style="border:none;border-radius:0;padding:6px 12px;border-left:1px solid var(--bd);" onclick="switchView('heatmap')">
+        <span style="font-size:12px;">🔥</span> Heatmap
+      </div>
+      <div id="view-btn-graphical" class="tbtn" style="border:none;border-radius:0;padding:6px 12px;border-left:1px solid var(--bd);" onclick="switchView('graphical')">
+        <span style="font-size:12px;">🗺</span> Graphical
+      </div>
+    </div>
+    
     <div id="clk">--:--:--</div>
     <div id="uchip"><span id="uc-role"></span>&nbsp;<span id="uc-name" style="color:var(--tx);font-weight:600;">—</span></div>
     <div class="tbtn adm" onclick="openM('mAdd')">＋ Add Host</div>
@@ -343,7 +356,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);display
 <div id="sb">
   <div class="sbl">Navigation</div>
   <div class="sbi act" id="nav-dash"     onclick="nav('dash')">    <span class="sbic">🏠</span><span class="sbtt">Dashboard</span></div>
-  <div class="sbi"     id="nav-map"      onclick="nav('map')">     <span class="sbic">🗺</span><span class="sbtt">Geographic Map</span></div>
   <div class="sbi"     id="nav-hosts"    onclick="nav('hosts')">   <span class="sbic">🖥</span><span class="sbtt">All Hosts</span><span class="sbct" id="sb-hc">0</span></div>
   <div class="sbi"     id="nav-alerts"   onclick="nav('alerts')">  <span class="sbic">🔔</span><span class="sbtt">Alerts</span><span class="sbct" id="sb-ac">0</span></div>
   <div class="sbi"     id="nav-rules"    onclick="nav('rules')">   <span class="sbic">📏</span><span class="sbtt">Alert Rules</span></div>
@@ -1505,6 +1517,7 @@ function initApp() {
   loadDash();
   loadSbHosts();
   loadAlertCount();
+  updateViewToggle(); // Set initial button states
   // Session heartbeat — renews session every 10 min so active NOC sessions never expire
   setInterval(async () => { await G('/api/auth/renew'); }, 10 * 60 * 1000);
   // Refresh loop — runs every second
@@ -1553,6 +1566,62 @@ function nav(name) {
     map:      loadGeographicMap
   };
   loaders[name]?.();
+  
+  // Update view toggle buttons based on current page
+  updateViewToggle();
+}
+
+function switchView(view) {
+  if (view === 'cards') {
+    nav('dash');
+    // Also tell heatmap add-on to show cards if it exists
+    if (window.__abxSetView) window.__abxSetView('cards');
+  } else if (view === 'heatmap') {
+    // Navigate to hosts page first (heatmap shows host data)
+    nav('hosts');
+    // Tell heatmap add-on to show heatmap
+    if (window.__abxSetView) window.__abxSetView('heatmap');
+  } else if (view === 'graphical') {
+    nav('map');
+    // Also tell heatmap add-on to show cards if it exists
+    if (window.__abxSetView) window.__abxSetView('cards');
+  }
+}
+
+function updateViewToggle() {
+  const cardsBtn = $('view-btn-cards');
+  const heatmapBtn = $('view-btn-heatmap');
+  const graphicalBtn = $('view-btn-graphical');
+  
+  if (!cardsBtn || !graphicalBtn) return;
+  
+  const activePage = document.querySelector('.page.act');
+  if (!activePage) return;
+  
+  // Reset all buttons
+  cardsBtn.style.background = 'var(--bg3)';
+  cardsBtn.style.color = 'var(--tx2)';
+  if (heatmapBtn) {
+    heatmapBtn.style.background = 'var(--bg3)';
+    heatmapBtn.style.color = 'var(--tx2)';
+  }
+  graphicalBtn.style.background = 'var(--bg3)';
+  graphicalBtn.style.color = 'var(--tx2)';
+  
+  // Check if heatmap is active (ask the add-on)
+  var isHeatmap = window.__abxIsHeatmapActive && window.__abxIsHeatmapActive();
+  
+  // Highlight active view
+  if (isHeatmap && heatmapBtn) {
+    heatmapBtn.style.background = 'var(--acc)';
+    heatmapBtn.style.color = '#000';
+  } else if (activePage.id === 'page-dash') {
+    cardsBtn.style.background = 'var(--acc)';
+    cardsBtn.style.color = '#000';
+  } else if (activePage.id === 'page-map') {
+    graphicalBtn.style.background = 'var(--acc)';
+    graphicalBtn.style.color = '#000';
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -4852,8 +4921,6 @@ function renderSitesList() {
   /* ══════════════════════════════════════════════════════════════
      VIEW SWITCHING (hide/show only, no DOM modification)
   ══════════════════════════════════════════════════════════════ */
-  var seg, bCards, bHeat;
-  
   function setView(v) {
     view = v;
     var heat = v === 'heatmap';
@@ -4861,8 +4928,11 @@ function renderSitesList() {
     if (board) board.style.display = heat ? 'none' : (board.__abxDisplay || '');
     root.hidden = !heat;
     
-    bCards.setAttribute('aria-pressed', String(!heat));
-    bHeat.setAttribute('aria-pressed', String(heat));
+    // Don't update our own buttons since we removed them
+    // Instead, notify the main app to update its buttons
+    if (window.updateViewToggle) {
+      window.updateViewToggle();
+    }
     
     clearInterval(timer);
     if (heat) {
@@ -4941,33 +5011,10 @@ function renderSitesList() {
     // Insert AFTER the board (nothing moved or removed)
     board.parentNode.insertBefore(root, board.nextSibling);
     
-    // Create toggle button
-    seg = el('div', 'abx-hm-seg');
-    seg.setAttribute('role', 'group');
-    seg.setAttribute('aria-label', 'Dashboard view');
-    
-    bCards = el('button', '', 'Cards');
-    bHeat = el('button', '', 'Heatmap');
-    bCards.type = bHeat.type = 'button';
-    
-    bCards.addEventListener('click', function () { setView('cards'); });
-    bHeat.addEventListener('click', function () { setView('heatmap'); });
-    
-    seg.appendChild(bCards);
-    seg.appendChild(bHeat);
-    
-    // Mount the toggle
-    var mount = q(CONFIG.toggleMountSelector);
-    if (mount) {
-      mount.insertBefore(seg, mount.firstChild);
-    } else {
-      // Fallback: add to page header if available
-      var pageHeader = q('#page-hosts .ct');
-      if (pageHeader) {
-        pageHeader.appendChild(document.createTextNode(' '));
-        pageHeader.appendChild(seg);
-      }
-    }
+    // Don't create our own toggle - use the main app's toggle buttons
+    // Expose functions for main app to call
+    window.__abxSetView = setView;
+    window.__abxIsHeatmapActive = function() { return !root.hidden; };
     
     // Restore last view or default to cards
     setView(CONFIG.rememberView && store(KEY) === 'heatmap' ? 'heatmap' : 'cards');
